@@ -13,28 +13,15 @@ import {
   XCircle,
   UserCheck,
   BookOpen,
-  Clock,
-  FileText,
-  Printer,
   BarChart3,
   Megaphone,
   Settings,
-  LogOut,
+  Database,
   ChevronLeft,
   ChevronRight,
   Menu,
   X,
-  User,
-  Shield,
-  Database,
-  Bell,
-  Calendar,
-  Mail,
-  PieChart,
-  Download,
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { id } from 'date-fns/locale';
 import { supabase } from '@/lib/supabase';
 import { Badge } from '@/components/ui/badge';
 
@@ -42,11 +29,9 @@ const AdminLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const location = useLocation();
 
-  // Ambil jumlah pendaftar pending
   useEffect(() => {
     const fetchPendingCount = async () => {
       const { count, error } = await supabase
@@ -78,7 +63,6 @@ const AdminLayout = () => {
     };
   }, []);
 
-  // Menu navigasi sidebar
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
     { icon: Users, label: 'Data Pendaftar', path: '/admin/applicants' },
@@ -111,7 +95,7 @@ const AdminLayout = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
-      {/* DESKTOP SIDEBAR */}
+      {/* Desktop Sidebar */}
       <aside
         className={`hidden md:flex flex-col fixed inset-y-0 left-0 z-40 bg-white border-r border-slate-200 transition-all duration-300 ${
           isSidebarOpen ? 'w-64' : 'w-20'
@@ -137,7 +121,6 @@ const AdminLayout = () => {
             {isSidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </Button>
         </div>
-
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {menuItems.map((item) => (
             <Link
@@ -159,7 +142,6 @@ const AdminLayout = () => {
             </Link>
           ))}
         </nav>
-
         <div className="border-t border-slate-100 p-4">
           <div className={`flex items-center gap-3 ${!isSidebarOpen && 'justify-center'}`}>
             <Avatar className="h-9 w-9 border-2 border-slate-200">
@@ -179,15 +161,13 @@ const AdminLayout = () => {
         </div>
       </aside>
 
-      {/* MOBILE SIDEBAR OVERLAY */}
+      {/* Mobile Sidebar */}
       {isMobileMenuOpen && (
         <div
           className="fixed inset-0 z-50 bg-navy-900/50 backdrop-blur-sm md:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
-
-      {/* MOBILE SIDEBAR */}
       <div
         className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-sidebar transform transition-transform duration-300 ease-in-out md:hidden ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
@@ -243,15 +223,15 @@ const AdminLayout = () => {
         </div>
       </div>
 
-      {/* MAIN CONTENT */}
+      {/* Main Content */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}>
-        {/* NAVBAR (dengan logout) */}
+        {/* Navbar */}
         <AdminNavbar
           toggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           isMobileMenuOpen={isMobileMenuOpen}
         />
 
-        {/* PAGE CONTENT */}
+        {/* Content */}
         <main className="flex-1 p-4 md:p-6">
           <Outlet />
         </main>

@@ -2,9 +2,12 @@ import React from 'react';
 
 const Verification = () => {
   return (
-    <div className="p-8">
+    <div className="p-6">
       <h2 className="text-2xl font-bold text-navy-900">Verifikasi Berkas</h2>
-      <p className="text-navy-500 mt-2">Halaman ini sedang dalam pengembangan.</p>
+      <p className="text-navy-500 mt-2">Halaman verifikasi berkas pendaftar.</p>
+      <div className="mt-6 bg-white rounded-xl border border-slate-200 p-8 text-center text-navy-400">
+        <p>Fitur ini sedang dalam pengembangan.</p>
+      </div>
     </div>
   );
 };

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Users,
   UserPlus,
@@ -11,10 +13,8 @@ import {
   Award,
   BarChart3,
   Loader2,
-  Eye,
-  ChevronRight,
   Activity,
-  Zap,
+  LogOut,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -25,13 +25,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import {
-  format,
-  subDays,
-  subWeeks,
-  subMonths,
-  subYears,
-} from 'date-fns';
+import { format, subDays, subWeeks, subMonths, subYears } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { supabase } from '@/lib/supabase';
 import { getApplicationStats, getApplicationsByDepartment } from '@/services/applicationService';
@@ -40,34 +34,115 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import StatsCard from '@/components/admin/StatsCard';
-import ProgressTarget from '@/components/admin/ProgressTarget';
 
-// Warna gradient untuk card statistik
-const STAT_COLORS = {
-  total: 'from-blue-500 to-blue-600',
-  today: 'from-emerald-500 to-emerald-600',
-  month: 'from-purple-500 to-purple-600',
-  year: 'from-indigo-500 to-indigo-600',
-  pending: 'from-amber-500 to-amber-600',
-  verified: 'from-cyan-500 to-cyan-600',
-  accepted: 'from-green-500 to-green-600',
-  rejected: 'from-red-500 to-red-600',
+// ============================================================
+// KOMPONEN STATS CARD (built-in agar tidak perlu import)
+// ============================================================
+const StatsCard = ({ title, value, icon: Icon, color = 'primary' }) => {
+  const colorClasses = {
+    primary: 'bg-blue-50 text-blue-600',
+    green: 'bg-green-50 text-green-600',
+    red: 'bg-red-50 text-red-600',
+    amber: 'bg-amber-50 text-amber-600',
+    blue: 'bg-blue-50 text-blue-600',
+    purple: 'bg-purple-50 text-purple-600',
+    indigo: 'bg-indigo-50 text-indigo-600',
+    emerald: 'bg-emerald-50 text-emerald-600',
+    rose: 'bg-rose-50 text-rose-600',
+  };
+
+  return (
+    <Card className="border-slate-200 shadow-soft hover:shadow-hover transition-all duration-300 hover:-translate-y-0.5">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-sm text-slate-500 font-medium mb-1">{title}</p>
+            <p className="text-2xl font-bold text-slate-900 tracking-tight">
+              {value?.toLocaleString() || 0}
+            </p>
+          </div>
+          <div className={`p-3 rounded-xl ${colorClasses[color]}`}>
+            {Icon && <Icon className="h-5 w-5" />}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 };
 
-const STAT_ICONS = {
-  total: Users,
-  today: UserPlus,
-  month: Calendar,
-  year: TrendingUp,
-  pending: Clock,
-  verified: CheckCircle,
-  accepted: Award,
-  rejected: XCircle,
+// ============================================================
+// KOMPONEN PROGRESS TARGET (built-in)
+// ============================================================
+const ProgressTarget = ({ total, target, accepted = 0 }) => {
+  const percentage = target > 0 ? Math.min((total / target) * 100, 100) : 0;
+  const remaining = Math.max(0, target - total);
+
+  let status = 'AMAN';
+  let statusColor = 'bg-green-100 text-green-700 border-green-200';
+  if (percentage >= 90 && percentage < 100) {
+    status = 'KUOTA HAMPIR PENUH';
+    statusColor = 'bg-amber-100 text-amber-700 border-amber-200';
+  }
+  if (percentage >= 100) {
+    status = 'KUOTA PENUH';
+    statusColor = 'bg-red-100 text-red-700 border-red-200';
+  }
+
+  return (
+    <Card className="border-slate-200 shadow-soft overflow-hidden">
+      <CardContent className="p-5">
+        <div className="flex flex-col md:flex-row items-center gap-4">
+          <div className="flex-1 w-full">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-sm font-medium text-slate-600">Realisasi Target Penerimaan</span>
+              <Badge variant="outline" className={statusColor}>
+                {status}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-slate-500 mb-1">
+              <span className="font-bold text-slate-900">{total}</span>
+              <span>dari</span>
+              <span className="font-bold text-slate-900">{target}</span>
+              <span>siswa</span>
+              <span className="ml-auto text-xs font-medium text-blue-600">{percentage.toFixed(0)}%</span>
+            </div>
+            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+              <div
+                className="h-2.5 rounded-full bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 transition-all duration-1000 ease-out"
+                style={{ width: `${Math.min(percentage, 100)}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-slate-400 mt-1.5">
+              <span>0</span>
+              <span>{Math.round(target / 2)}</span>
+              <span className="font-medium text-blue-600">{target}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 text-sm bg-slate-50 rounded-lg px-4 py-2 border border-slate-100 whitespace-nowrap">
+            <div className="flex items-center gap-1">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <span className="text-slate-600">Diterima:</span>
+              <span className="font-bold text-slate-900">{accepted || 0}</span>
+            </div>
+            <div className="w-px h-6 bg-slate-200" />
+            <div>
+              <span className="text-slate-600">Sisa:</span>
+              <span className="font-bold text-amber-600 ml-1">{remaining}</span>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 };
 
+// ============================================================
+// DASHBOARD UTAMA
+// ============================================================
 const Dashboard = () => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
   const [stats, setStats] = useState({
     total: 0,
     today: 0,
@@ -87,7 +162,7 @@ const Dashboard = () => {
   const [greeting, setGreeting] = useState('Selamat Datang');
   const [currentTime, setCurrentTime] = useState('');
 
-  // Set greeting berdasarkan waktu
+  // ========== GREETING & JAM ==========
   useEffect(() => {
     const hour = new Date().getHours();
     if (hour < 12) setGreeting('Selamat Pagi');
@@ -100,7 +175,7 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch data
+  // ========== FETCH DATA ==========
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -124,7 +199,7 @@ const Dashboard = () => {
     }
   };
 
-  // Ambil data chart
+  // ========== FETCH CHART ==========
   const fetchChartData = async (selectedPeriod) => {
     try {
       let startDate;
@@ -198,26 +273,25 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
-  const percentage = target > 0 ? Math.min((stats.total / target) * 100, 100) : 0;
+  // ========== LOGOUT ==========
+  const handleLogout = async () => {
+    if (window.confirm('Apakah Anda yakin ingin keluar dari dashboard?')) {
+      const { error } = await logout();
+      if (!error) {
+        navigate('/admin/login');
+      } else {
+        alert('Gagal logout: ' + error.message);
+      }
+    }
+  };
 
-  // Statistik card data
-  const statCards = [
-    { key: 'total', title: 'Total Pendaftar', value: stats.total },
-    { key: 'today', title: 'Hari Ini', value: stats.today },
-    { key: 'month', title: 'Bulan Ini', value: stats.month },
-    { key: 'year', title: 'Tahun Ini', value: stats.year },
-    { key: 'pending', title: 'Menunggu', value: stats.pending },
-    { key: 'verified', title: 'Terverifikasi', value: stats.verified },
-    { key: 'accepted', title: 'Diterima', value: stats.accepted },
-    { key: 'rejected', title: 'Ditolak', value: stats.rejected },
-  ];
-
+  // ========== RENDER ==========
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <Loader2 className="h-10 w-10 animate-spin text-primary-600 mx-auto" />
-          <p className="mt-4 text-navy-500">Memuat dashboard...</p>
+          <Loader2 className="h-10 w-10 animate-spin text-blue-600 mx-auto" />
+          <p className="mt-4 text-slate-500">Memuat dashboard...</p>
         </div>
       </div>
     );
@@ -236,86 +310,82 @@ const Dashboard = () => {
     );
   }
 
+  const percentage = target > 0 ? Math.min((stats.total / target) * 100, 100) : 0;
+
+  const statCards = [
+    { key: 'total', title: 'Total Pendaftar', value: stats.total, icon: Users, color: 'primary' },
+    { key: 'today', title: 'Hari Ini', value: stats.today, icon: UserPlus, color: 'emerald' },
+    { key: 'month', title: 'Bulan Ini', value: stats.month, icon: Calendar, color: 'purple' },
+    { key: 'year', title: 'Tahun Ini', value: stats.year, icon: TrendingUp, color: 'indigo' },
+    { key: 'pending', title: 'Menunggu', value: stats.pending, icon: Clock, color: 'amber' },
+    { key: 'verified', title: 'Terverifikasi', value: stats.verified, icon: CheckCircle, color: 'blue' },
+    { key: 'accepted', title: 'Diterima', value: stats.accepted, icon: Award, color: 'green' },
+    { key: 'rejected', title: 'Ditolak', value: stats.rejected, icon: XCircle, color: 'red' },
+  ];
+
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* HEADER / WELCOME SECTION */}
+    <div className="space-y-6">
+      {/* ===== HEADER + LOGOUT ===== */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-navy-900 tracking-tight">
-            {greeting}, <span className="text-primary-600">Administrator</span> 👋
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+            {greeting}, <span className="text-blue-600">Administrator</span> 👋
           </h1>
-          <p className="text-navy-500 text-sm mt-1">
+          <p className="text-slate-500 text-sm mt-1">
             Selamat datang kembali di dashboard SPMB. Berikut ringkasan data penerimaan siswa baru.
           </p>
         </div>
-        <div className="flex items-center gap-3 bg-white rounded-xl border border-slate-200 px-4 py-2.5 shadow-soft">
-          <div className="flex items-center gap-2">
-            <Target className="h-4 w-4 text-primary-600" />
-            <span className="text-sm text-navy-600">
-              Target: <strong className="text-navy-900">{target}</strong> siswa
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 px-4 py-2.5 shadow-soft">
+            <Target className="h-4 w-4 text-blue-600" />
+            <span className="text-sm text-slate-600">
+              Target: <strong className="text-slate-900">{target}</strong> siswa
             </span>
-            <Badge className="bg-primary-100 text-primary-700 hover:bg-primary-100">
+            <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">
               {percentage.toFixed(0)}%
             </Badge>
+            <div className="w-px h-6 bg-slate-200" />
+            <Activity className="h-4 w-4 text-slate-400" />
+            <span className="font-mono text-sm text-slate-500">{currentTime}</span>
           </div>
-          <div className="w-px h-6 bg-slate-200" />
-          <div className="flex items-center gap-2 text-sm text-navy-500">
-            <Activity className="h-4 w-4 text-navy-400" />
-            <span className="font-mono">{currentTime}</span>
-          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleLogout}
+            className="gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
         </div>
       </div>
 
-      {/* TARGET PROGRESS */}
+      {/* ===== PROGRESS TARGET ===== */}
       <ProgressTarget
         total={stats.total}
         target={target}
         accepted={stats.accepted}
-        rejected={stats.rejected}
       />
 
-      {/* STATISTIK CARD GRID */}
+      {/* ===== STATISTIK CARD ===== */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {statCards.map((card) => {
-          const Icon = STAT_ICONS[card.key] || Users;
-          const colorKey = card.key;
-          const gradient = STAT_COLORS[colorKey] || STAT_COLORS.total;
-
-          return (
-            <Card
-              key={card.key}
-              className="border-slate-200 shadow-soft hover:shadow-hover transition-all duration-300 hover:-translate-y-0.5 overflow-hidden group"
-            >
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-navy-500 font-medium mb-1">{card.title}</p>
-                    <p className="text-2xl font-bold text-navy-900 tracking-tight">
-                      {card.value?.toLocaleString() || 0}
-                    </p>
-                  </div>
-                  <div
-                    className={cn(
-                      'p-3 rounded-xl bg-gradient-to-br text-white shadow-lg transition-transform group-hover:scale-110 duration-300',
-                      gradient
-                    )}
-                  >
-                    <Icon className="h-5 w-5" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+        {statCards.map((card) => (
+          <StatsCard
+            key={card.key}
+            title={card.title}
+            value={card.value}
+            icon={card.icon}
+            color={card.color}
+          />
+        ))}
       </div>
 
-      {/* GRAFIK & JURUSAN TERPOPULER */}
+      {/* ===== GRAFIK & JURUSAN TERPOPULER ===== */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Chart Utama */}
         <Card className="border-slate-200 shadow-soft lg:col-span-2">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-primary-500" />
+              <BarChart3 className="h-4 w-4 text-blue-500" />
               Grafik Pendaftaran
             </CardTitle>
             <Select value={period} onValueChange={setPeriod}>
@@ -332,7 +402,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             {chartData.length === 0 ? (
-              <div className="h-64 flex items-center justify-center text-navy-400 text-sm">
+              <div className="h-64 flex items-center justify-center text-slate-400 text-sm">
                 Belum ada data untuk periode ini.
               </div>
             ) : (
@@ -381,7 +451,6 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Jurusan Terpopuler */}
         <Card className="border-slate-200 shadow-soft">
           <CardHeader>
             <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -391,7 +460,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             {topDepartments.length === 0 ? (
-              <p className="text-sm text-navy-400 text-center py-8">
+              <p className="text-sm text-slate-400 text-center py-8">
                 Belum ada data pendaftar.
               </p>
             ) : (
@@ -412,17 +481,17 @@ const Dashboard = () => {
                     <div key={dept.id} className="group">
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-xs font-bold text-navy-400 w-5">
+                          <span className="text-xs font-bold text-slate-400 w-5">
                             {idx + 1}
                           </span>
-                          <span className="text-sm font-medium text-navy-800 truncate">
+                          <span className="text-sm font-medium text-slate-800 truncate">
                             {dept.name}
                           </span>
                           <Badge variant="outline" className="text-xs font-mono">
                             {dept.code}
                           </Badge>
                         </div>
-                        <span className="text-sm font-bold text-navy-900">
+                        <span className="text-sm font-bold text-slate-900">
                           {dept.count}
                         </span>
                       </div>
@@ -441,13 +510,13 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* TOMBOL REFRESH */}
+      {/* ===== TOMBOL REFRESH ===== */}
       <div className="flex justify-end">
         <Button
           variant="outline"
           size="sm"
           onClick={fetchData}
-          className="gap-2 border-slate-200 hover:border-primary-300"
+          className="gap-2 border-slate-200 hover:border-blue-300"
         >
           <Loader2 className="h-3 w-3" />
           Refresh Data

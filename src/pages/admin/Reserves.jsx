@@ -13,8 +13,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Search, RefreshCw, Loader2, Eye } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { format } from 'date-fns';
-import { id } from 'date-fns/locale';
 
 const Reserves = () => {
   const [applicants, setApplicants] = useState([]);

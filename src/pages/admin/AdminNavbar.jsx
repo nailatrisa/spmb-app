@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -14,20 +14,30 @@ import {
   School,
   Menu,
   X,
+  Home,
+  HelpCircle,
+  CheckCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 const AdminNavbar = ({ toggleMobileMenu, isMobileMenuOpen }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const profileRef = useRef(null);
+  const notificationRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setIsProfileOpen(false);
+      }
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setIsNotificationOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -36,11 +46,15 @@ const AdminNavbar = ({ toggleMobileMenu, isMobileMenuOpen }) => {
 
   const handleLogout = async () => {
     if (window.confirm('Apakah Anda yakin ingin keluar dari akun administrator?')) {
-      const { error } = await logout();
-      if (!error) {
-        navigate('/admin/login');
-      } else {
-        alert('Gagal logout: ' + error.message);
+      try {
+        const { error } = await logout();
+        if (!error) {
+          navigate('/admin/login');
+        } else {
+          alert('Gagal logout: ' + error.message);
+        }
+      } catch (err) {
+        alert('Terjadi kesalahan saat logout.');
       }
     }
   };
@@ -55,13 +69,37 @@ const AdminNavbar = ({ toggleMobileMenu, isMobileMenuOpen }) => {
       .slice(0, 2);
   };
 
-  const displayName = user?.profile?.full_name || user?.email?.split('@')[0] || 'Admin';
+  const displayName = user?.profile?.full_name || user?.email?.split('@')[0] || 'Administrator';
   const userRole = user?.profile?.role || 'Admin SPMB';
 
+  // Breadcrumb
+  const getBreadcrumb = () => {
+    const path = location.pathname;
+    const segments = path.split('/').filter(Boolean);
+    if (segments.length <= 1) return [{ label: 'Dashboard', path: '/admin/dashboard', isLast: true }];
+
+    const breadcrumbs = [];
+    let currentPath = '';
+    segments.forEach((seg, index) => {
+      currentPath += '/' + seg;
+      const label = seg
+        .replace(/-/g, ' ')
+        .replace(/\b\w/g, (l) => l.toUpperCase());
+      breadcrumbs.push({
+        label: index === 0 && seg === 'admin' ? 'Dashboard' : label,
+        path: currentPath,
+        isLast: index === segments.length - 1,
+      });
+    });
+    return breadcrumbs;
+  };
+
+  const breadcrumbs = getBreadcrumb();
+
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-soft">
+    <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-soft">
       <div className="px-4 md:px-6 h-16 flex items-center justify-between">
-        {/* Kiri: Logo */}
+        {/* KIRI: Logo + Hamburger */}
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -86,8 +124,28 @@ const AdminNavbar = ({ toggleMobileMenu, isMobileMenuOpen }) => {
           </Link>
         </div>
 
-        {/* Kanan: Profile + Logout */}
-        <div className="flex items-center gap-3">
+        {/* TENGAH: Breadcrumb */}
+        <nav className="hidden md:flex items-center gap-1.5 text-sm" aria-label="Breadcrumb">
+          <Home className="h-3.5 w-3.5 text-navy-400" />
+          {breadcrumbs.map((crumb, idx) => (
+            <React.Fragment key={idx}>
+              {idx > 0 && <span className="text-navy-300 text-xs">/</span>}
+              {crumb.isLast ? (
+                <span className="font-medium text-navy-700 text-xs">{crumb.label}</span>
+              ) : (
+                <Link
+                  to={crumb.path}
+                  className="text-navy-500 hover:text-primary-600 text-xs transition-colors"
+                >
+                  {crumb.label}
+                </Link>
+              )}
+            </React.Fragment>
+          ))}
+        </nav>
+
+        {/* KANAN: Status, Notifikasi, Profile */}
+        <div className="flex items-center gap-2 md:gap-3">
           {/* Status SPMB */}
           <div className="hidden sm:flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
             <span className="relative flex h-2 w-2">
@@ -97,12 +155,63 @@ const AdminNavbar = ({ toggleMobileMenu, isMobileMenuOpen }) => {
             <span className="text-[10px] font-semibold text-emerald-700">SPMB Aktif</span>
           </div>
 
-          {/* Tanggal */}
+          {/* Tanggal & Jam */}
           <div className="hidden lg:flex items-center gap-1.5 text-xs text-navy-500 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
             <span>{format(new Date(), 'EEEE, d MMM yyyy', { locale: id })}</span>
             <span className="w-px h-3 bg-slate-200" />
             <span className="font-mono">{format(new Date(), 'HH:mm')}</span>
           </div>
+
+          {/* Notification */}
+          <div className="relative" ref={notificationRef}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative text-navy-500 hover:text-navy-700 hover:bg-slate-100 rounded-full h-9 w-9"
+              onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+            >
+              <Bell className="h-5 w-5" />
+              <span className="absolute -top-0.5 -right-0.5 h-4.5 w-4.5 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                3
+              </span>
+            </Button>
+
+            {isNotificationOpen && (
+              <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl border border-slate-200 shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="px-4 py-3 border-b border-slate-100">
+                  <h4 className="font-semibold text-navy-800 text-sm">Notifikasi</h4>
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  <div className="px-4 py-3 hover:bg-slate-50 border-b border-slate-50 transition-colors">
+                    <p className="text-sm text-navy-700">📄 Pendaftar baru masuk</p>
+                    <p className="text-xs text-navy-400">2 menit lalu</p>
+                  </div>
+                  <div className="px-4 py-3 hover:bg-slate-50 border-b border-slate-50 transition-colors">
+                    <p className="text-sm text-navy-700">📋 Dokumen perlu diverifikasi</p>
+                    <p className="text-xs text-navy-400">15 menit lalu</p>
+                  </div>
+                  <div className="px-4 py-3 hover:bg-slate-50 transition-colors">
+                    <p className="text-sm text-navy-700">🎯 Kuota TKJ hampir penuh</p>
+                    <p className="text-xs text-navy-400">1 jam lalu</p>
+                  </div>
+                </div>
+                <div className="px-4 py-2 border-t border-slate-100 text-center">
+                  <Link to="/admin/notifications" className="text-xs text-primary-600 hover:underline font-medium">
+                    Lihat semua notifikasi
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Bantuan */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden md:flex text-navy-500 hover:text-navy-700 hover:bg-slate-100 rounded-full h-9 w-9"
+          >
+            <HelpCircle className="h-5 w-5" />
+          </Button>
 
           {/* Profile Dropdown */}
           <div className="relative" ref={profileRef}>
@@ -119,12 +228,14 @@ const AdminNavbar = ({ toggleMobileMenu, isMobileMenuOpen }) => {
                 <p className="text-sm font-medium text-navy-800 leading-tight">{displayName}</p>
                 <p className="text-[10px] text-navy-400 leading-tight">{userRole}</p>
               </div>
-              <ChevronDown className="h-4 w-4 text-navy-400" />
+              <ChevronDown className={cn(
+                "h-4 w-4 text-navy-400 transition-transform duration-200",
+                isProfileOpen && "rotate-180"
+              )} />
             </button>
 
-            {/* Dropdown */}
             {isProfileOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-slate-200 shadow-xl z-50 overflow-hidden">
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-slate-200 shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
                   <p className="font-semibold text-navy-800 text-sm">{displayName}</p>
                   <p className="text-xs text-navy-500">{user?.email}</p>

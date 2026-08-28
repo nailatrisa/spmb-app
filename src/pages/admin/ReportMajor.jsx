@@ -3,8 +3,11 @@ import React from 'react';
 const ReportMajor = () => {
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold text-navy-900">Rekap Per Jurusan</h1>
-      <p className="text-navy-500 mt-2">Halaman ini sedang dalam pengembangan.</p>
+      <h2 className="text-2xl font-bold text-navy-900">Rekap Per Jurusan</h2>
+      <p className="text-navy-500 mt-2">Rekapitulasi data per jurusan.</p>
+      <div className="mt-6 bg-white rounded-xl border border-slate-200 p-8 text-center text-navy-400">
+        <p>Fitur ini sedang dalam pengembangan.</p>
+      </div>
     </div>
   );
 };
