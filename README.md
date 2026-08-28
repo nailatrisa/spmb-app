@@ -711,5 +711,3 @@ Hak cipta dilindungi undang-undang.
     Email: info@spmb-school.com
 
     GitHub: nailatrisa/spmb-app
-
-⭐ Beri bintang di GitHub jika project ini bermanfaat!
