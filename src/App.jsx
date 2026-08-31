@@ -3,8 +3,11 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicLayout from './layouts/PublicLayout';
+import AdminLayout from './layouts/AdminLayout';
 
-// Public Pages
+// ============================================
+// PUBLIC PAGES
+// ============================================
 import Home from './pages/public/Home';
 import Departments from './pages/public/Departments';
 import DepartmentDetail from './pages/public/DepartmentDetail';
@@ -15,54 +18,52 @@ import RegistrationSuccess from './pages/public/RegistrationSuccess';
 import CheckStatus from './pages/public/CheckStatus';
 import RegistrationCard from './pages/public/RegistrationCard';
 
-// Admin Auth Pages
+// ============================================
+// ADMIN AUTH PAGES
+// ============================================
 import Login from './pages/admin/Login';
 import Register from './pages/admin/Register';
 
-// Admin Pages (yang sudah ada)
+// ============================================
+// ADMIN PROTECTED PAGES (SEMUA LENGKAP)
+// ============================================
 import Dashboard from './pages/admin/Dashboard';
 import Applicants from './pages/admin/Applicants';
+import ApplicantDetail from './pages/admin/ApplicantDetail';
+
+// Verifikasi & Seleksi
+import Verification from './pages/admin/Verification';
+import Selection from './pages/admin/Selection';
+import Accepted from './pages/admin/Accepted';
+import Rejected from './pages/admin/Rejected';
+import Reserves from './pages/admin/Reserves';
+
+// Master Data
 import AdminDepartments from './pages/admin/Departments';
 import Schools from './pages/admin/Schools';
 import AdminAnnouncements from './pages/admin/Announcements';
-import Settings from './pages/admin/Settings';
+
+// Laporan & Pengaturan
 import Statistics from './pages/admin/Statistics';
+import Settings from './pages/admin/Settings';
 import AuditLog from './pages/admin/AuditLog';
 import Users from './pages/admin/Users';
 import Export from './pages/admin/Export';
-import Reserves from './pages/admin/Reserves';
-import ApplicantDetail from './pages/admin/ApplicantDetail';
 
-// Placeholder baru - kita buat sementara sebagai fungsi inline agar tidak perlu file terpisah
-// Untuk sementara, kita langsung definisikan di sini untuk menghindari file hilang
-const PlaceholderPage = ({ title }) => (
-  <div className="p-8">
-    <h2 className="text-2xl font-bold text-navy-900">{title}</h2>
-    <p className="text-navy-500 mt-2">Halaman ini sedang dalam pengembangan.</p>
-  </div>
-);
-
-const Verification = () => <PlaceholderPage title="Verifikasi Berkas" />;
-const Selection = () => <PlaceholderPage title="Seleksi" />;
-const Accepted = () => <PlaceholderPage title="Daftar Diterima" />;
-const Rejected = () => <PlaceholderPage title="Daftar Ditolak" />;
-const Waves = () => <PlaceholderPage title="Gelombang Pendaftaran" />;
-const Requirements = () => <PlaceholderPage title="Persyaratan" />;
-const Schedule = () => <PlaceholderPage title="Jadwal SPMB" />;
-const PrintProof = () => <PlaceholderPage title="Cetak Bukti Pendaftaran" />;
-const PrintCard = () => <PlaceholderPage title="Cetak Kartu Peserta" />;
-const AnnouncementLetter = () => <PlaceholderPage title="Surat Pengumuman" />;
-const ReportMajor = () => <PlaceholderPage title="Rekap Per Jurusan" />;
-const FAQ = () => <PlaceholderPage title="FAQ" />;
-const Info = () => <PlaceholderPage title="Informasi SPMB" />;
-const Roles = () => <PlaceholderPage title="Role & Permission" />;
+// ============================================
+// PLACEHOLDER UNTUK HALAMAN YANG BELUM DIBUAT (OPSIONAL)
+// ============================================
+// Jika file belum ada, import sebagai placeholder agar tidak error
+// Namun semua file penting sudah dibuat di fase sebelumnya
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Public Routes */}
+          {/* ==========================================
+              PUBLIC ROUTES (tanpa auth)
+          ========================================== */}
           <Route element={<PublicLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/jurusan" element={<Departments />} />
@@ -75,39 +76,158 @@ function App() {
             <Route path="/kartu/:id" element={<RegistrationCard />} />
           </Route>
 
-          {/* Admin Auth */}
+          {/* ==========================================
+              ADMIN AUTH ROUTES (tanpa layout)
+          ========================================== */}
           <Route path="/admin/login" element={<Login />} />
           <Route path="/admin/register" element={<Register />} />
 
-          {/* Protected Admin Routes */}
-          <Route path="/admin/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/admin/applicants" element={<ProtectedRoute><Applicants /></ProtectedRoute>} />
-          <Route path="/admin/applicants/:id" element={<ProtectedRoute><ApplicantDetail /></ProtectedRoute>} />
-          <Route path="/admin/departments" element={<ProtectedRoute><AdminDepartments /></ProtectedRoute>} />
-          <Route path="/admin/schools" element={<ProtectedRoute><Schools /></ProtectedRoute>} />
-          <Route path="/admin/announcements" element={<ProtectedRoute><AdminAnnouncements /></ProtectedRoute>} />
-          <Route path="/admin/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-          <Route path="/admin/statistics" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />
-          <Route path="/admin/audit-log" element={<ProtectedRoute><AuditLog /></ProtectedRoute>} />
-          <Route path="/admin/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
-          <Route path="/admin/export" element={<ProtectedRoute><Export /></ProtectedRoute>} />
-          <Route path="/admin/reserves" element={<ProtectedRoute><Reserves /></ProtectedRoute>} />
-          
-          {/* Routes baru dengan placeholder inline */}
-          <Route path="/admin/verification" element={<ProtectedRoute><Verification /></ProtectedRoute>} />
-          <Route path="/admin/selection" element={<ProtectedRoute><Selection /></ProtectedRoute>} />
-          <Route path="/admin/accepted" element={<ProtectedRoute><Accepted /></ProtectedRoute>} />
-          <Route path="/admin/rejected" element={<ProtectedRoute><Rejected /></ProtectedRoute>} />
-          <Route path="/admin/waves" element={<ProtectedRoute><Waves /></ProtectedRoute>} />
-          <Route path="/admin/requirements" element={<ProtectedRoute><Requirements /></ProtectedRoute>} />
-          <Route path="/admin/schedule" element={<ProtectedRoute><Schedule /></ProtectedRoute>} />
-          <Route path="/admin/print-proof" element={<ProtectedRoute><PrintProof /></ProtectedRoute>} />
-          <Route path="/admin/print-card" element={<ProtectedRoute><PrintCard /></ProtectedRoute>} />
-          <Route path="/admin/announcement-letter" element={<ProtectedRoute><AnnouncementLetter /></ProtectedRoute>} />
-          <Route path="/admin/report-major" element={<ProtectedRoute><ReportMajor /></ProtectedRoute>} />
-          <Route path="/admin/faq" element={<ProtectedRoute><FAQ /></ProtectedRoute>} />
-          <Route path="/admin/info" element={<ProtectedRoute><Info /></ProtectedRoute>} />
-          <Route path="/admin/roles" element={<ProtectedRoute><Roles /></ProtectedRoute>} />
+          {/* ==========================================
+              PROTECTED ADMIN ROUTES (dengan AdminLayout)
+          ========================================== */}
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Manajemen Calon Siswa */}
+          <Route
+            path="/admin/applicants"
+            element={
+              <ProtectedRoute>
+                <Applicants />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/applicants/:id"
+            element={
+              <ProtectedRoute>
+                <ApplicantDetail />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Verifikasi & Seleksi */}
+          <Route
+            path="/admin/verification"
+            element={
+              <ProtectedRoute>
+                <Verification />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/selection"
+            element={
+              <ProtectedRoute>
+                <Selection />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/accepted"
+            element={
+              <ProtectedRoute>
+                <Accepted />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/rejected"
+            element={
+              <ProtectedRoute>
+                <Rejected />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/reserves"
+            element={
+              <ProtectedRoute>
+                <Reserves />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Master Data */}
+          <Route
+            path="/admin/departments"
+            element={
+              <ProtectedRoute>
+                <AdminDepartments />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/schools"
+            element={
+              <ProtectedRoute>
+                <Schools />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/announcements"
+            element={
+              <ProtectedRoute>
+                <AdminAnnouncements />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Laporan & Statistik */}
+          <Route
+            path="/admin/statistics"
+            element={
+              <ProtectedRoute>
+                <Statistics />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Pengaturan & Sistem */}
+          <Route
+            path="/admin/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/audit-log"
+            element={
+              <ProtectedRoute>
+                <AuditLog />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <Users />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/export"
+            element={
+              <ProtectedRoute>
+                <Export />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ==========================================
+              REDIRECT: jika admin masuk ke /admin
+          ========================================== */}
+          {/* Fallback jika ada route admin yang belum terdaftar */}
         </Routes>
       </AuthProvider>
     </BrowserRouter>

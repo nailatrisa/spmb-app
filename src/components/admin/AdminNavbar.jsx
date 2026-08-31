@@ -71,19 +71,15 @@ const AdminNavbar = ({ toggleMobileMenu, isMobileMenuOpen }) => {
   const displayName = user?.profile?.full_name || user?.email?.split('@')[0] || 'Administrator';
   const userRole = user?.profile?.role || 'Admin SPMB';
 
-  // Breadcrumb
   const getBreadcrumb = () => {
     const path = location.pathname;
     const segments = path.split('/').filter(Boolean);
     if (segments.length <= 1) return [{ label: 'Dashboard', path: '/admin/dashboard', isLast: true }];
-
     const breadcrumbs = [];
     let currentPath = '';
     segments.forEach((seg, index) => {
       currentPath += '/' + seg;
-      const label = seg
-        .replace(/-/g, ' ')
-        .replace(/\b\w/g, (l) => l.toUpperCase());
+      const label = seg.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
       breadcrumbs.push({
         label: index === 0 && seg === 'admin' ? 'Dashboard' : label,
         path: currentPath,
