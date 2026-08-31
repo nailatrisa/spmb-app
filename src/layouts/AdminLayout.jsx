@@ -13,6 +13,7 @@ import {
   XCircle,
   UserCheck,
   BookOpen,
+  School,
   BarChart3,
   Megaphone,
   Settings,
@@ -21,6 +22,13 @@ import {
   ChevronRight,
   Menu,
   X,
+  FileText,
+  Printer,
+  Download,
+  HelpCircle,
+  Mail,
+  Shield,
+  User,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +40,7 @@ const AdminLayout = () => {
   const { user } = useAuth();
   const location = useLocation();
 
+  // Ambil jumlah pendaftar pending (real-time)
   useEffect(() => {
     const fetchPendingCount = async () => {
       const { count, error } = await supabase
@@ -42,6 +51,7 @@ const AdminLayout = () => {
     };
     fetchPendingCount();
 
+    // Subscribe ke perubahan real-time
     const channel = supabase
       .channel('admin-pending')
       .on(
@@ -63,17 +73,37 @@ const AdminLayout = () => {
     };
   }, []);
 
+  // ============================================================
+  // MENU SIDEBAR LENGKAP
+  // ============================================================
   const menuItems = [
+    // DASHBOARD
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
+
+    // PENERIMAAN
     { icon: Users, label: 'Data Pendaftar', path: '/admin/applicants' },
     { icon: FileCheck, label: 'Verifikasi Berkas', path: '/admin/verification', badge: pendingCount },
     { icon: Filter, label: 'Seleksi', path: '/admin/selection' },
     { icon: CheckCircle, label: 'Diterima', path: '/admin/accepted' },
     { icon: XCircle, label: 'Ditolak', path: '/admin/rejected' },
     { icon: UserCheck, label: 'Cadangan', path: '/admin/reserves' },
+
+    // MASTER DATA
     { icon: BookOpen, label: 'Jurusan', path: '/admin/departments' },
+    { icon: School, label: 'Asal Sekolah', path: '/admin/schools' },
+
+    // LAPORAN
     { icon: BarChart3, label: 'Statistik', path: '/admin/statistics' },
+    { icon: Download, label: 'Export Data', path: '/admin/export' },
+
+    // KONTEN
     { icon: Megaphone, label: 'Pengumuman', path: '/admin/announcements' },
+    { icon: HelpCircle, label: 'FAQ', path: '/admin/faq' },
+    { icon: FileText, label: 'Informasi SPMB', path: '/admin/info' },
+
+    // SISTEM
+    { icon: User, label: 'User Admin', path: '/admin/users' },
+    { icon: Shield, label: 'Role & Permission', path: '/admin/roles' },
     { icon: Settings, label: 'Pengaturan', path: '/admin/settings' },
     { icon: Database, label: 'Audit Log', path: '/admin/audit-log' },
   ];
@@ -95,20 +125,21 @@ const AdminLayout = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
-      {/* Desktop Sidebar */}
+      {/* ===== DESKTOP SIDEBAR ===== */}
       <aside
         className={`hidden md:flex flex-col fixed inset-y-0 left-0 z-40 bg-white border-r border-slate-200 transition-all duration-300 ${
           isSidebarOpen ? 'w-64' : 'w-20'
         }`}
       >
+        {/* Logo */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-slate-100">
           <Link to="/admin/dashboard" className="flex items-center gap-2 overflow-hidden">
-            <div className="bg-primary-600 text-white p-1.5 rounded-lg flex-shrink-0">
+            <div className="bg-blue-600 text-white p-1.5 rounded-lg flex-shrink-0">
               <LayoutDashboard className="h-5 w-5" />
             </div>
             {isSidebarOpen && (
-              <span className="font-bold text-navy-900 whitespace-nowrap">
-                SPMB<span className="text-primary-600">.</span>
+              <span className="font-bold text-slate-900 whitespace-nowrap">
+                SPMB<span className="text-blue-600">.</span>
               </span>
             )}
           </Link>
@@ -121,6 +152,8 @@ const AdminLayout = () => {
             {isSidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </Button>
         </div>
+
+        {/* Menu */}
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {menuItems.map((item) => (
             <Link
@@ -128,8 +161,8 @@ const AdminLayout = () => {
               to={item.path}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                 isActive(item.path)
-                  ? 'bg-primary-50 text-primary-700'
-                  : 'text-navy-600 hover:bg-slate-100 hover:text-navy-900'
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               } ${!isSidebarOpen && 'justify-center'}`}
             >
               <item.icon className={`h-5 w-5 flex-shrink-0 ${!isSidebarOpen && 'h-6 w-6'}`} />
@@ -142,29 +175,31 @@ const AdminLayout = () => {
             </Link>
           ))}
         </nav>
+
+        {/* User Profile */}
         <div className="border-t border-slate-100 p-4">
           <div className={`flex items-center gap-3 ${!isSidebarOpen && 'justify-center'}`}>
             <Avatar className="h-9 w-9 border-2 border-slate-200">
-              <AvatarFallback className="bg-primary-100 text-primary-700 text-xs font-bold">
+              <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-bold">
                 {getInitials(user?.profile?.full_name || user?.email)}
               </AvatarFallback>
             </Avatar>
             {isSidebarOpen && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-navy-800 truncate">
+                <p className="text-sm font-medium text-slate-800 truncate">
                   {user?.profile?.full_name || 'Admin'}
                 </p>
-                <p className="text-xs text-navy-500 truncate">{user?.email}</p>
+                <p className="text-xs text-slate-500 truncate">{user?.email}</p>
               </div>
             )}
           </div>
         </div>
       </aside>
 
-      {/* Mobile Sidebar */}
+      {/* ===== MOBILE SIDEBAR ===== */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 z-50 bg-navy-900/50 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm md:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
@@ -175,10 +210,10 @@ const AdminLayout = () => {
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-slate-100">
           <Link to="/admin/dashboard" className="flex items-center gap-2">
-            <div className="bg-primary-600 text-white p-1.5 rounded-lg">
+            <div className="bg-blue-600 text-white p-1.5 rounded-lg">
               <LayoutDashboard className="h-5 w-5" />
             </div>
-            <span className="font-bold text-navy-900">SPMB<span className="text-primary-600">.</span></span>
+            <span className="font-bold text-slate-900">SPMB<span className="text-blue-600">.</span></span>
           </Link>
           <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(false)}>
             <X className="h-6 w-6" />
@@ -192,8 +227,8 @@ const AdminLayout = () => {
               onClick={() => setIsMobileMenuOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive(item.path)
-                  ? 'bg-primary-50 text-primary-700'
-                  : 'text-navy-600 hover:bg-slate-100 hover:text-navy-900'
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
               <item.icon className="h-5 w-5 flex-shrink-0" />
@@ -209,29 +244,26 @@ const AdminLayout = () => {
         <div className="border-t border-slate-100 p-4">
           <div className="flex items-center gap-3">
             <Avatar className="h-9 w-9 border-2 border-slate-200">
-              <AvatarFallback className="bg-primary-100 text-primary-700 text-xs font-bold">
+              <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-bold">
                 {getInitials(user?.profile?.full_name || user?.email)}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-navy-800 truncate">
+              <p className="text-sm font-medium text-slate-800 truncate">
                 {user?.profile?.full_name || 'Admin'}
               </p>
-              <p className="text-xs text-navy-500 truncate">{user?.email}</p>
+              <p className="text-xs text-slate-500 truncate">{user?.email}</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* ===== MAIN CONTENT ===== */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}>
-        {/* Navbar */}
         <AdminNavbar
           toggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           isMobileMenuOpen={isMobileMenuOpen}
         />
-
-        {/* Content */}
         <main className="flex-1 p-4 md:p-6">
           <Outlet />
         </main>

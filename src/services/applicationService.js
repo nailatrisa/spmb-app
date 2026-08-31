@@ -1,10 +1,9 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 // ============================================================
 // 1. SUBMIT PENDAFTARAN
 // ============================================================
 export const submitApplication = async (formData, fileUrls) => {
-  // Siapkan data untuk insert
   const applicationData = {
     full_name: formData.full_name,
     nik: formData.nik,
@@ -31,8 +30,8 @@ export const submitApplication = async (formData, fileUrls) => {
     parent_address: formData.parent_address || '',
     department_1: formData.department_1,
     department_2: formData.department_2 || null,
+    average_score: formData.average_score ? parseFloat(formData.average_score) : null,
     status: 'pending',
-    // File URLs dari upload
     photo_url: fileUrls.photo_url || null,
     family_card_url: fileUrls.family_card_url || null,
     birth_certificate_url: fileUrls.birth_certificate_url || null,
@@ -109,10 +108,8 @@ export const getApplicationCount = async () => {
 // 5. STATISTIK UNTUK ADMIN DASHBOARD
 // ============================================================
 export const getApplicationStats = async () => {
-  // Total
   const total = await getApplicationCount();
 
-  // Per status
   const statuses = ['pending', 'verified', 'accepted', 'rejected'];
   const statusCounts = {};
   for (const status of statuses) {
@@ -124,7 +121,6 @@ export const getApplicationStats = async () => {
     statusCounts[status] = count;
   }
 
-  // Hari ini
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const { count: todayCount, error: todayError } = await supabase
@@ -133,7 +129,6 @@ export const getApplicationStats = async () => {
     .gte('registered_at', today.toISOString());
   if (todayError) throw todayError;
 
-  // Bulan ini
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const { count: monthCount, error: monthError } = await supabase
     .from('applications')
@@ -141,7 +136,6 @@ export const getApplicationStats = async () => {
     .gte('registered_at', monthStart.toISOString());
   if (monthError) throw monthError;
 
-  // Tahun ini
   const yearStart = new Date(today.getFullYear(), 0, 1);
   const { count: yearCount, error: yearError } = await supabase
     .from('applications')
@@ -162,13 +156,11 @@ export const getApplicationStats = async () => {
 // 6. STATISTIK PER JURUSAN (UNTUK GRAFIK)
 // ============================================================
 export const getApplicationsByDepartment = async () => {
-  // Ambil semua aplikasi dengan department_1 dan department_2
   const { data, error } = await supabase
     .from('applications')
     .select('department_1, department_2');
   if (error) throw error;
 
-  // Hitung per department_1
   const counts = {};
   data.forEach(app => {
     if (app.department_1) {
@@ -179,7 +171,6 @@ export const getApplicationsByDepartment = async () => {
     }
   });
 
-  // Ambil nama jurusan
   const deptIds = Object.keys(counts);
   if (deptIds.length === 0) return [];
 
@@ -189,7 +180,6 @@ export const getApplicationsByDepartment = async () => {
     .in('id', deptIds);
   if (deptError) throw deptError;
 
-  // Gabungkan
   return depts.map(dept => ({
     ...dept,
     count: counts[dept.id] || 0,
@@ -210,17 +200,12 @@ export const getAllApplications = async (filters = {}) => {
     `)
     .order('registered_at', { ascending: false });
 
-  // Filter status
   if (filters.status && filters.status !== 'all') {
     query = query.eq('status', filters.status);
   }
-
-  // Filter jurusan
   if (filters.department) {
     query = query.eq('department_1', filters.department);
   }
-
-  // Search (nama atau nomor pendaftaran)
   if (filters.search) {
     query = query.or(`full_name.ilike.%${filters.search}%,registration_number.ilike.%${filters.search}%`);
   }

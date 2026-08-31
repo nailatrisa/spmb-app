@@ -35,8 +35,9 @@ const initialFormData = {
   // Step 5: Pilihan Jurusan
   department_1: '',
   department_2: '',
+  average_score: '', // ✅ TAMBAHKAN INI
   
-  // Step 6: Dokumen (akan diisi dengan file objects)
+  // Step 6: Dokumen
   photo: null,
   family_card: null,
   birth_certificate: null,
@@ -50,7 +51,6 @@ export const useRegistrationForm = () => {
 
   const updateField = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Hapus error untuk field yang sudah diisi
     if (errors[field]) {
       setErrors(prev => {
         const newErrors = { ...prev };

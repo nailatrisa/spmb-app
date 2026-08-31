@@ -43,18 +43,16 @@ import {
   Loader2,
   Eye,
   Award,
-  TrendingUp,
   CheckCircle,
   XCircle,
   UserCheck,
-  Filter,
+  Zap,
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { supabase } from '@/lib/supabase';
-import StatusBadge from '@/components/admin/StatusBadge';
 
 const Selection = () => {
   const [applicants, setApplicants] = useState([]);
@@ -70,6 +68,7 @@ const Selection = () => {
   const [confirmAction, setConfirmAction] = useState(null);
   const [sortField, setSortField] = useState('rank');
   const [sortOrder, setSortOrder] = useState('asc');
+  const [isAutoSelecting, setIsAutoSelecting] = useState(false);
 
   // Ambil data pendaftar yang sudah diverifikasi
   const fetchApplicants = async () => {
@@ -80,7 +79,7 @@ const Selection = () => {
           .from('applications')
           .select(`
             *,
-            department_1:department_1 (id, name, code, quota),
+            department_1:department_1 (id, name, code, quota, min_score),
             department_2:department_2 (id, name, code),
             school_origin:school_origin_id (id, name)
           `)
@@ -92,15 +91,25 @@ const Selection = () => {
       if (appsResult.error) throw appsResult.error;
       if (deptsResult.error) throw deptsResult.error;
 
-      // Tambahkan ranking sementara (nanti bisa dihitung dari nilai)
-      const apps = appsResult.data.map((app, index) => ({
-        ...app,
-        rank: index + 1,
-        score: Math.floor(Math.random() * 50) + 50, // Simulasi nilai 50-100
-      }));
+      // Tambahkan ranking berdasarkan nilai
+      const apps = appsResult.data
+        .filter(app => app.average_score !== null)
+        .sort((a, b) => (b.average_score || 0) - (a.average_score || 0))
+        .map((app, index) => ({
+          ...app,
+          rank: index + 1,
+        }));
 
-      setApplicants(apps);
-      setFilteredApplicants(apps);
+      // Tambahkan yang belum punya nilai di akhir
+      const noScoreApps = appsResult.data
+        .filter(app => app.average_score === null)
+        .map((app, index) => ({
+          ...app,
+          rank: apps.length + index + 1,
+        }));
+
+      setApplicants([...apps, ...noScoreApps]);
+      setFilteredApplicants([...apps, ...noScoreApps]);
       setDepartments(deptsResult.data || []);
     } catch (error) {
       console.error('Gagal ambil data:', error);
@@ -117,12 +126,10 @@ const Selection = () => {
   useEffect(() => {
     let result = [...applicants];
 
-    // Filter jurusan
     if (departmentFilter !== 'all') {
       result = result.filter((app) => app.department_1?.id === departmentFilter);
     }
 
-    // Search
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       result = result.filter(
@@ -145,8 +152,8 @@ const Selection = () => {
           valB = b.full_name;
           break;
         case 'score':
-          valA = a.score || 0;
-          valB = b.score || 0;
+          valA = a.average_score || 0;
+          valB = b.average_score || 0;
           break;
         case 'status':
           valA = a.status;
@@ -165,13 +172,11 @@ const Selection = () => {
     setFilteredApplicants(result);
   }, [searchTerm, departmentFilter, applicants, sortField, sortOrder]);
 
-  // Buka detail
   const openDetail = (applicant) => {
     setSelectedApplicant(applicant);
     setDetailOpen(true);
   };
 
-  // Handle seleksi
   const handleSelection = async (action) => {
     if (!selectedApplicant) return;
 
@@ -229,6 +234,98 @@ const Selection = () => {
     }
   };
 
+  // 🔥 SELEKSI OTOMATIS BERDASARKAN NILAI & KUOTA
+  const handleAutoSelection = async () => {
+    if (!window.confirm('Lakukan seleksi otomatis berdasarkan nilai dan kuota?')) return;
+
+    setIsAutoSelecting(true);
+    try {
+      // Ambil semua siswa yang sudah diverifikasi
+      const { data: verifiedStudents, error: fetchError } = await supabase
+        .from('applications')
+        .select(`
+          *,
+          department_1:department_1 (id, name, quota, min_score)
+        `)
+        .eq('status', 'verified');
+
+      if (fetchError) throw fetchError;
+
+      if (!verifiedStudents || verifiedStudents.length === 0) {
+        alert('Tidak ada siswa yang siap diseleksi.');
+        setIsAutoSelecting(false);
+        return;
+      }
+
+      let acceptedCount = 0;
+      let rejectedCount = 0;
+      let reserveCount = 0;
+      let skippedCount = 0;
+
+      // Kelompokkan berdasarkan jurusan
+      const byDepartment = {};
+      for (const student of verifiedStudents) {
+        const deptId = student.department_1;
+        if (!deptId) continue;
+        if (!byDepartment[deptId]) {
+          byDepartment[deptId] = {
+            dept: student.department_1,
+            students: [],
+          };
+        }
+        byDepartment[deptId].students.push(student);
+      }
+
+      // Proses setiap jurusan
+      for (const deptId of Object.keys(byDepartment)) {
+        const { dept, students } = byDepartment[deptId];
+        // Urutkan siswa berdasarkan nilai tertinggi
+        students.sort((a, b) => (b.average_score || 0) - (a.average_score || 0));
+
+        let accepted = 0;
+
+        for (const student of students) {
+          // Cek apakah nilai memenuhi min_score
+          if (student.average_score === null || student.average_score < dept.min_score) {
+            // Nilai tidak memenuhi -> ditolak
+            await supabase
+              .from('applications')
+              .update({ status: 'rejected', updated_at: new Date().toISOString() })
+              .eq('id', student.id);
+            rejectedCount++;
+            continue;
+          }
+
+          // Cek kuota
+          if (accepted < dept.quota) {
+            // Terima
+            await supabase
+              .from('applications')
+              .update({ status: 'accepted', updated_at: new Date().toISOString() })
+              .eq('id', student.id);
+            accepted++;
+            acceptedCount++;
+          } else {
+            // Kuota penuh -> cadangan
+            await supabase
+              .from('applications')
+              .update({ status: 'reserve', updated_at: new Date().toISOString() })
+              .eq('id', student.id);
+            reserveCount++;
+          }
+        }
+      }
+
+      alert(`Seleksi otomatis selesai!\n✅ Diterima: ${acceptedCount}\n📋 Cadangan: ${reserveCount}\n❌ Ditolak: ${rejectedCount}`);
+      await fetchApplicants();
+    } catch (error) {
+      console.error('Gagal seleksi otomatis:', error);
+      alert('Terjadi kesalahan saat seleksi otomatis.');
+    } finally {
+      setIsAutoSelecting(false);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const map = {
       verified: { label: 'Terverifikasi', className: 'bg-blue-50 text-blue-600 border-blue-200' },
@@ -240,7 +337,6 @@ const Selection = () => {
     return <Badge className={info.className}>{info.label}</Badge>;
   };
 
-  // Toggle sort
   const toggleSort = (field) => {
     if (sortField === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -253,7 +349,7 @@ const Selection = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
       </div>
     );
   }
@@ -263,19 +359,31 @@ const Selection = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-navy-900">Seleksi Calon Siswa</h2>
-          <p className="text-sm text-navy-500">Lakukan seleksi dan tentukan kelulusan calon siswa</p>
+          <h2 className="text-2xl font-bold text-slate-900">Seleksi Calon Siswa</h2>
+          <p className="text-sm text-slate-500">Lakukan seleksi dan tentukan kelulusan calon siswa berdasarkan nilai SKL</p>
         </div>
-        <Button variant="outline" size="sm" onClick={fetchApplicants} className="gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleAutoSelection} 
+            className="gap-2 bg-slate-800 text-white hover:bg-slate-700"
+            disabled={isAutoSelecting}
+          >
+            {isAutoSelecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+            {isAutoSelecting ? 'Memproses...' : 'Seleksi Otomatis'}
+          </Button>
+          <Button variant="outline" size="sm" onClick={fetchApplicants} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Filter */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-navy-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
             placeholder="Cari nama atau nomor pendaftaran..."
             value={searchTerm}
@@ -299,7 +407,7 @@ const Selection = () => {
       </div>
 
       {/* Tabel */}
-      <Card className="border-slate-200 shadow-soft">
+      <Card className="border-slate-200 shadow-sm">
         <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
@@ -320,10 +428,12 @@ const Selection = () => {
                 <TableHead>Jurusan</TableHead>
                 <TableHead className="cursor-pointer" onClick={() => toggleSort('score')}>
                   <div className="flex items-center gap-1">
-                    Nilai
+                    Nilai SKL
                     {sortField === 'score' && (sortOrder === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
                   </div>
                 </TableHead>
+                <TableHead>Min Score</TableHead>
+                <TableHead>Syarat</TableHead>
                 <TableHead className="cursor-pointer" onClick={() => toggleSort('status')}>
                   <div className="flex items-center gap-1">
                     Status
@@ -336,36 +446,57 @@ const Selection = () => {
             <TableBody>
               {filteredApplicants.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-navy-400">
+                  <TableCell colSpan={9} className="text-center py-8 text-slate-400">
                     Tidak ada data yang siap diseleksi.
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredApplicants.map((app) => (
-                  <TableRow key={app.id}>
-                    <TableCell className="font-bold text-navy-800">{app.rank || '-'}</TableCell>
-                    <TableCell className="font-medium">{app.full_name}</TableCell>
-                    <TableCell className="font-mono text-xs">{app.registration_number}</TableCell>
-                    <TableCell>{app.department_1?.name || '-'}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="bg-primary-50 text-primary-700">
-                        {app.score || '-'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(app.status)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="gap-1 text-primary-600"
-                        onClick={() => openDetail(app)}
-                      >
-                        <Eye className="h-4 w-4" />
-                        Detail
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
+                filteredApplicants.map((app) => {
+                  const isEligible = app.average_score !== null && 
+                                     app.department_1?.min_score !== null && 
+                                     app.average_score >= app.department_1.min_score;
+                  return (
+                    <TableRow key={app.id}>
+                      <TableCell className="font-bold text-slate-800">{app.rank || '-'}</TableCell>
+                      <TableCell className="font-medium">{app.full_name}</TableCell>
+                      <TableCell className="font-mono text-xs">{app.registration_number}</TableCell>
+                      <TableCell>{app.department_1?.name || '-'}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                          {app.average_score || '-'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-slate-50 text-slate-600">
+                          {app.department_1?.min_score || '-'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {app.average_score && app.department_1?.min_score ? (
+                          isEligible ? (
+                            <Badge className="bg-green-100 text-green-700 border-green-200">✅ Memenuhi</Badge>
+                          ) : (
+                            <Badge className="bg-red-100 text-red-700 border-red-200">❌ Tidak Memenuhi</Badge>
+                          )
+                        ) : (
+                          <span className="text-xs text-slate-400">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>{getStatusBadge(app.status)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1 text-blue-600"
+                          onClick={() => openDetail(app)}
+                        >
+                          <Eye className="h-4 w-4" />
+                          Detail
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
@@ -393,29 +524,31 @@ const Selection = () => {
               {/* Informasi */}
               <div className="grid grid-cols-2 gap-4 bg-slate-50 rounded-lg p-4">
                 <div>
-                  <p className="text-xs text-navy-400">Nama Lengkap</p>
-                  <p className="font-medium text-navy-800">{selectedApplicant.full_name}</p>
+                  <p className="text-xs text-slate-400">Nama Lengkap</p>
+                  <p className="font-medium text-slate-800">{selectedApplicant.full_name}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-navy-400">NISN</p>
-                  <p className="font-medium text-navy-800">{selectedApplicant.nisn}</p>
+                  <p className="text-xs text-slate-400">NISN</p>
+                  <p className="font-medium text-slate-800">{selectedApplicant.nisn}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-navy-400">Jurusan Pilihan 1</p>
-                  <p className="font-medium text-navy-800">{selectedApplicant.department_1?.name || '-'}</p>
+                  <p className="text-xs text-slate-400">Jurusan Pilihan 1</p>
+                  <p className="font-medium text-slate-800">{selectedApplicant.department_1?.name || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-navy-400">Nilai</p>
-                  <Badge variant="outline" className="bg-primary-50 text-primary-700 text-lg px-3 py-1">
-                    {selectedApplicant.score || '-'}
+                  <p className="text-xs text-slate-400">Nilai SKL</p>
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 text-lg px-3 py-1">
+                    {selectedApplicant.average_score || '-'}
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-xs text-navy-400">Asal Sekolah</p>
-                  <p className="font-medium text-navy-800">{selectedApplicant.school_origin?.name || '-'}</p>
+                  <p className="text-xs text-slate-400">Nilai Minimum</p>
+                  <Badge variant="outline" className="bg-slate-50 text-slate-600 text-lg px-3 py-1">
+                    {selectedApplicant.department_1?.min_score || '-'}
+                  </Badge>
                 </div>
                 <div>
-                  <p className="text-xs text-navy-400">Status Saat Ini</p>
+                  <p className="text-xs text-slate-400">Status Saat Ini</p>
                   {getStatusBadge(selectedApplicant.status)}
                 </div>
               </div>
@@ -483,7 +616,10 @@ const Selection = () => {
                 Jurusan: {selectedApplicant?.department_1?.name}
               </div>
               <div className="text-sm">
-                Nilai: {selectedApplicant?.score}
+                Nilai SKL: {selectedApplicant?.average_score}
+              </div>
+              <div className="text-sm">
+                Min Score: {selectedApplicant?.department_1?.min_score}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
