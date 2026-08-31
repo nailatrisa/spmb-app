@@ -34,11 +34,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 // ============================================================
-// KOMPONEN STATS CARD (built-in agar tidak perlu import)
+// STATS CARD (REUSABLE)
 // ============================================================
-const StatsCard = ({ title, value, icon: Icon, color = 'primary' }) => {
+const StatsCard = ({ title, value, icon: Icon, color = 'primary', onClick, navLabel }) => {
   const colorClasses = {
     primary: 'bg-blue-50 text-blue-600',
     green: 'bg-green-50 text-green-600',
@@ -52,7 +53,13 @@ const StatsCard = ({ title, value, icon: Icon, color = 'primary' }) => {
   };
 
   return (
-    <Card className="border-slate-200 shadow-soft hover:shadow-hover transition-all duration-300 hover:-translate-y-0.5">
+    <Card
+      className={cn(
+        "border-slate-200 shadow-soft hover:shadow-hover transition-all duration-300 hover:-translate-y-0.5",
+        onClick && "cursor-pointer"
+      )}
+      onClick={onClick}
+    >
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div>
@@ -60,6 +67,11 @@ const StatsCard = ({ title, value, icon: Icon, color = 'primary' }) => {
             <p className="text-2xl font-bold text-slate-900 tracking-tight">
               {value?.toLocaleString() || 0}
             </p>
+            {navLabel && (
+              <p className="text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                {navLabel} →
+              </p>
+            )}
           </div>
           <div className={`p-3 rounded-xl ${colorClasses[color]}`}>
             {Icon && <Icon className="h-5 w-5" />}
@@ -71,7 +83,7 @@ const StatsCard = ({ title, value, icon: Icon, color = 'primary' }) => {
 };
 
 // ============================================================
-// KOMPONEN PROGRESS TARGET (built-in)
+// PROGRESS TARGET
 // ============================================================
 const ProgressTarget = ({ total, target, accepted = 0 }) => {
   const percentage = target > 0 ? Math.min((total / target) * 100, 100) : 0;
@@ -275,13 +287,30 @@ const Dashboard = () => {
 
   // ========== LOGOUT ==========
   const handleLogout = async () => {
-    if (window.confirm('Apakah Anda yakin ingin keluar dari dashboard?')) {
+    if (window.confirm('Apakah Anda yakin ingin keluar dari akun administrator?')) {
       const { error } = await logout();
       if (!error) {
         navigate('/admin/login');
       } else {
         alert('Gagal logout: ' + error.message);
       }
+    }
+  };
+
+  // ========== NAVIGASI CARD ==========
+  const handleCardClick = (key) => {
+    const navMap = {
+      total: '/admin/applicants',
+      today: '/admin/applicants?filter=today',
+      month: '/admin/statistics?period=month',
+      year: '/admin/statistics?period=year',
+      pending: '/admin/applicants?status=pending',
+      verified: '/admin/applicants?status=verified',
+      accepted: '/admin/applicants?status=accepted',
+      rejected: '/admin/applicants?status=rejected',
+    };
+    if (navMap[key]) {
+      navigate(navMap[key]);
     }
   };
 
@@ -324,7 +353,7 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* ===== HEADER + LOGOUT ===== */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
@@ -335,7 +364,7 @@ const Dashboard = () => {
             Selamat datang kembali di dashboard SPMB. Berikut ringkasan data penerimaan siswa baru.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 px-4 py-2.5 shadow-soft">
             <Target className="h-4 w-4 text-blue-600" />
             <span className="text-sm text-slate-600">
@@ -348,11 +377,12 @@ const Dashboard = () => {
             <Activity className="h-4 w-4 text-slate-400" />
             <span className="font-mono text-sm text-slate-500">{currentTime}</span>
           </div>
+          {/* 🔥 TOMBOL LOGOUT */}
           <Button
             variant="destructive"
             size="sm"
             onClick={handleLogout}
-            className="gap-2"
+            className="gap-2 bg-red-600 hover:bg-red-700 text-white"
           >
             <LogOut className="h-4 w-4" />
             Logout
@@ -376,6 +406,8 @@ const Dashboard = () => {
             value={card.value}
             icon={card.icon}
             color={card.color}
+            onClick={() => handleCardClick(card.key)}
+            navLabel="Lihat Detail →"
           />
         ))}
       </div>
