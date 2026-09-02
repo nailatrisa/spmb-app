@@ -10,7 +10,7 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%; /* Biru modern */
+    --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -23,7 +23,7 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
-    --radius: 0.75rem; /* 12px - lebih modern */
+    --radius: 0.75rem;
   }
 
   * {
@@ -39,7 +39,6 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -51,7 +50,6 @@
     @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
   }
 
-  /* Selection */
   ::selection {
     @apply bg-primary-200 text-primary-900;
   }
@@ -68,5 +66,48 @@
 
   .link-underline {
     @apply relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-primary-600 after:transition-all after:duration-300 hover:after:w-full;
+  }
+
+  /* ============================================================
+     TAMBAHAN PREMIUM (AMAN, TANPA CIRCULAR DEPENDENCY)
+     ============================================================ */
+
+  /* Gradient Text */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent;
+  }
+
+  /* Glassmorphism */
+  .glass {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-lg;
+  }
+
+  /* Skeleton Loading */
+  .skeleton {
+    @apply animate-pulse bg-slate-200 rounded;
+  }
+
+  /* Premium Badge */
+  .badge-premium {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-premium-blue {
+    @apply bg-blue-50 text-blue-700;
+  }
+  .badge-premium-green {
+    @apply bg-emerald-50 text-emerald-700;
+  }
+  .badge-premium-amber {
+    @apply bg-amber-50 text-amber-700;
+  }
+  .badge-premium-rose {
+    @apply bg-rose-50 text-rose-700;
+  }
+  .badge-premium-purple {
+    @apply bg-purple-50 text-purple-700;
+  }
+  .badge-premium-slate {
+    @apply bg-slate-100 text-slate-700;
   }
 }
