@@ -5,7 +5,7 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Loader2, Save, Upload, X } from 'lucide-react';
+import { Loader2, Save, Upload, X, Calendar } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 const Settings = () => {
@@ -27,6 +27,8 @@ const Settings = () => {
     target_students: '',
     description: '',
     logo_url: '',
+    registration_deadline: '', // 🔥 TAMBAHKAN
+    is_open: true,              // 🔥 TAMBAHKAN
   });
 
   const fetchData = async () => {
@@ -44,6 +46,8 @@ const Settings = () => {
         target_students: data.target_students || '',
         description: data.description || '',
         logo_url: data.logo_url || '',
+        registration_deadline: data.registration_deadline || '',
+        is_open: data.is_open !== false,
       });
       if (data.logo_url) {
         setLogoPreview(data.logo_url);
@@ -100,11 +104,10 @@ const Settings = () => {
     try {
       let logoUrl = formData.logo_url;
 
-      // Upload logo baru jika ada
       if (logoFile) {
         const fileExt = logoFile.name.split('.').pop();
         const fileName = `logo_${Date.now()}.${fileExt}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('school-logo')
           .upload(fileName, logoFile, {
             cacheControl: '3600',
@@ -164,6 +167,7 @@ const Settings = () => {
               </div>
             )}
 
+            {/* Nama Sekolah */}
             <div className="space-y-1">
               <Label htmlFor="school_name">Nama Sekolah *</Label>
               <Input
@@ -175,6 +179,7 @@ const Settings = () => {
               />
             </div>
 
+            {/* Alamat */}
             <div className="space-y-1">
               <Label htmlFor="address">Alamat *</Label>
               <Textarea
@@ -187,6 +192,7 @@ const Settings = () => {
               />
             </div>
 
+            {/* Telepon & NPSN */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label htmlFor="phone">Nomor Telepon *</Label>
@@ -210,6 +216,7 @@ const Settings = () => {
               </div>
             </div>
 
+            {/* Tahun Ajaran & Target */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label htmlFor="academic_year">Tahun Ajaran *</Label>
@@ -235,6 +242,7 @@ const Settings = () => {
               </div>
             </div>
 
+            {/* Deskripsi */}
             <div className="space-y-1">
               <Label htmlFor="description">Deskripsi Sekolah</Label>
               <Textarea
@@ -246,6 +254,41 @@ const Settings = () => {
               />
             </div>
 
+            {/* ============================================================
+                🔥 TAMBAHAN: DEADLINE & STATUS PENDAFTARAN
+            ============================================================ */}
+            <div className="space-y-1">
+              <Label htmlFor="registration_deadline">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Tanggal Deadline Pendaftaran
+                </div>
+              </Label>
+              <Input
+                id="registration_deadline"
+                type="datetime-local"
+                value={formData.registration_deadline || ''}
+                onChange={(e) => setFormData({ ...formData, registration_deadline: e.target.value })}
+              />
+              <p className="text-xs text-slate-400">
+                Pendaftaran akan ditutup otomatis setelah tanggal dan jam ini.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <input
+                type="checkbox"
+                id="is_open"
+                checked={formData.is_open}
+                onChange={(e) => setFormData({ ...formData, is_open: e.target.checked })}
+                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+              />
+              <Label htmlFor="is_open" className="cursor-pointer font-normal">
+                Buka Pendaftaran (centang jika pendaftaran aktif)
+              </Label>
+            </div>
+
+            {/* Logo */}
             <div className="space-y-1">
               <Label>Logo Sekolah</Label>
               <div className="flex items-center gap-4">

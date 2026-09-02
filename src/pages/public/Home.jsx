@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, GraduationCap, Users, Building, Award } from 'lucide-react';
+import { ArrowRight, GraduationCap, Users, Building, Award, Calendar, CheckCircle, AlertCircle } from 'lucide-react';
 
 // Import komponen existing
 import Hero from '../../components/public/Hero';
@@ -59,6 +59,131 @@ const slideInLeft = {
     x: 0, 
     transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } 
   },
+};
+
+// ============================================================
+// REGISTRATION SCHEDULE COMPONENT - Data dari Supabase
+// ============================================================
+const RegistrationSchedule = () => {
+  const [settings, setSettings] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const data = await getSchoolSettings();
+        setSettings(data);
+      } catch (error) {
+        console.error('Error fetching registration schedule:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
+  const formatDate = (date) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  };
+
+  if (loading) {
+    return null;
+  }
+
+  const scheduleItems = [
+    {
+      id: 1,
+      title: 'Periode Pendaftaran',
+      value: settings?.academic_year || 'Tahun Ajaran 2024/2025',
+      icon: Calendar,
+      color: 'from-blue-500 to-blue-600',
+      bgColor: 'bg-blue-50',
+      textColor: 'text-blue-600',
+    },
+    {
+      id: 2,
+      title: 'Batas Pendaftaran',
+      value: formatDate(settings?.registration_deadline),
+      icon: AlertCircle,
+      color: 'from-amber-500 to-amber-600',
+      bgColor: 'bg-amber-50',
+      textColor: 'text-amber-600',
+    },
+    {
+      id: 3,
+      title: 'Status Pendaftaran',
+      value: settings?.is_open ? 'Dibuka' : 'Ditutup',
+      icon: settings?.is_open ? CheckCircle : AlertCircle,
+      color: settings?.is_open ? 'from-green-500 to-green-600' : 'from-red-500 to-red-600',
+      bgColor: settings?.is_open ? 'bg-green-50' : 'bg-red-50',
+      textColor: settings?.is_open ? 'text-green-600' : 'text-red-600',
+    },
+  ];
+
+  return (
+    <motion.section
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.15 }}
+      variants={staggerContainer}
+      className="py-12 md:py-16 bg-slate-50/50 relative overflow-hidden"
+    >
+      {/* Decorative elements */}
+      <div className="absolute top-0 left-1/4 w-72 h-72 bg-blue-100 rounded-full -translate-y-1/2 blur-3xl opacity-30 pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-amber-100 rounded-full translate-y-1/2 blur-3xl opacity-30 pointer-events-none" />
+
+      <div className="container-custom relative">
+        <motion.div
+          className="text-center mb-8 md:mb-10"
+          variants={fadeInUp}
+        >
+          <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">
+            Jadwal Pendaftaran
+          </h3>
+          <p className="text-slate-600 text-sm md:text-base">
+            Informasi penting tentang periode dan status pendaftaran siswa baru
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          {scheduleItems.map((item, idx) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 + idx * 0.1, duration: 0.5 }}
+              whileHover={{ y: -4, transition: { duration: 0.3 } }}
+              className="group"
+            >
+              <div className={`h-full rounded-xl border border-slate-200 ${item.bgColor} p-6 md:p-7 hover:shadow-lg hover:border-slate-300 transition-all duration-300`}>
+                <motion.div
+                  className={`w-12 h-12 rounded-lg bg-gradient-to-br ${item.color} text-white flex items-center justify-center mb-4 shadow-md`}
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <item.icon className="h-6 w-6" />
+                </motion.div>
+
+                <h4 className="text-sm font-semibold text-slate-600 mb-2 uppercase tracking-wide">
+                  {item.title}
+                </h4>
+                <p className={`text-xl md:text-2xl font-bold ${item.textColor}`}>
+                  {item.value}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </motion.section>
+  );
 };
 
 // ============================================================
@@ -236,6 +361,11 @@ const Home = () => {
           STATS HIGHLIGHT SECTION
       ============================================================ */}
       <StatsHighlight />
+
+      {/* ============================================================
+          REGISTRATION SCHEDULE SECTION
+      ============================================================ */}
+      <RegistrationSchedule />
 
       {/* ============================================================
           ADMISSION COUNTER & SCHOOL INFO

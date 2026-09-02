@@ -1,11 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, NavLink } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import Logo from '../components/Logo';
-import { Menu, X, LogIn, Home, BookOpen, Megaphone, ClipboardList, Search } from 'lucide-react';
+import { Menu, X, LogIn, Home, BookOpen, Megaphone, ClipboardList, Search, Calendar, Clock } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 const PublicLayout = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
+  const [deadline, setDeadline] = useState(null);
+
+  // ============================================================
+  // 🔥 CEK STATUS PENDAFTARAN
+  // ============================================================
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('school_settings')
+          .select('is_open, registration_deadline')
+          .single();
+        if (error) throw error;
+        setIsOpen(data?.is_open !== false);
+        setDeadline(data?.registration_deadline || null);
+      } catch (err) {
+        console.error('Gagal ambil status pendaftaran:', err);
+      }
+    };
+    fetchStatus();
+  }, []);
+
+  // ============================================================
+  // AUTO-CLOSE: Cek deadline setiap 5 menit
+  // ============================================================
+  useEffect(() => {
+    const checkDeadline = async () => {
+      if (!deadline) return;
+      const now = new Date();
+      const deadlineDate = new Date(deadline);
+      if (now > deadlineDate && isOpen) {
+        await supabase
+          .from('school_settings')
+          .update({ is_open: false, updated_at: new Date().toISOString() })
+          .eq('id', (await supabase.from('school_settings').select('id').single()).data.id);
+        setIsOpen(false);
+        alert('Pendaftaran telah ditutup otomatis karena deadline telah berakhir.');
+      }
+    };
+
+    const interval = setInterval(checkDeadline, 5 * 60 * 1000); // 5 menit
+    return () => clearInterval(interval);
+  }, [deadline, isOpen]);
 
   const navLinks = [
     { to: '/', label: 'Beranda', icon: Home },
@@ -46,7 +91,28 @@ const PublicLayout = () => {
             </nav>
 
             <div className="flex items-center gap-3">
-              {/* Admin Login Button */}
+              {/* 🔥 Status Pendaftaran */}
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium">
+                {isOpen ? (
+                  <>
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    </span>
+                    <span className="text-green-700">Pendaftaran Dibuka</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full rounded-full bg-red-400"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                    <span className="text-red-700">Pendaftaran Ditutup</span>
+                  </>
+                )}
+              </div>
+
+              {/* Admin Login */}
               <Link to="/admin/login">
                 <Button variant="outline" size="sm" className="hidden sm:flex items-center gap-2 border-slate-200">
                   <LogIn className="h-4 w-4" />
@@ -118,9 +184,10 @@ const PublicLayout = () => {
               <Link to="/pengumuman" className="hover:text-primary-600 transition-colors">Pengumuman</Link>
               <Link to="/pendaftaran" className="hover:text-primary-600 transition-colors">Daftar</Link>
             </div>
-            <p className="text-xs">
-              &copy; {new Date().getFullYear()} SMK Negeri 1 Ponorogo. All rights reserved.
-            </p>
+            <div className="flex items-center gap-4 text-xs">
+              <span>{isOpen ? '🟢 Dibuka' : '🔴 Ditutup'}</span>
+              <span>&copy; {new Date().getFullYear()} SMK Negeri 1 Ponorogo. All rights reserved.</span>
+            </div>
           </div>
         </div>
       </footer>

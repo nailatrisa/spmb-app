@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useRegistrationForm } from '../../hooks/useRegistrationForm';
 import { getDepartments } from '../../services/departmentService';
 import { getSchoolOrigins } from '../../services/schoolService';
+import { getSchoolSettings } from '../../services/settingsService';
 import { uploadMultipleFiles } from '../../services/uploadService';
 import { submitApplication } from '../../services/applicationService';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, ArrowRight, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Loader2, AlertCircle, Clock } from 'lucide-react';
 
 // Import step components
 import StepPersonal from './components/registration/StepPersonal';
@@ -44,18 +45,24 @@ const Registration = () => {
   const [departments, setDepartments] = useState([]);
   const [schools, setSchools] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [settings, setSettings] = useState(null);
+  const [loadingSettings, setLoadingSettings] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [depts, schs] = await Promise.all([
+        const [depts, schs, settingsData] = await Promise.all([
           getDepartments(),
           getSchoolOrigins(),
+          getSchoolSettings().catch(() => null),
         ]);
         setDepartments(depts);
         setSchools(schs);
+        setSettings(settingsData);
       } catch (error) {
         console.error('Gagal ambil data:', error);
+      } finally {
+        setLoadingSettings(false);
       }
     };
     fetchData();
@@ -186,6 +193,56 @@ const Registration = () => {
             </div>
           ))}
         </div>
+
+        {/* Registration Status Banner */}
+        {!loadingSettings && settings && (
+          <div className={`mb-6 p-4 md:p-5 rounded-lg border flex items-start gap-3 ${
+            settings.is_open
+              ? 'bg-blue-50 border-blue-200'
+              : 'bg-red-50 border-red-200'
+          }`}>
+            <div className={`flex-shrink-0 mt-0.5 ${
+              settings.is_open ? 'text-blue-600' : 'text-red-600'
+            }`}>
+              {settings.is_open ? (
+                <Clock className="h-5 w-5" />
+              ) : (
+                <AlertCircle className="h-5 w-5" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              {settings.is_open ? (
+                <>
+                  <p className="text-sm font-semibold text-blue-900 mb-1">
+                    Pendaftaran Dibuka
+                  </p>
+                  <p className="text-sm text-blue-800">
+                    Pendaftaran dibuka hingga{' '}
+                    <span className="font-semibold">
+                      {settings.registration_deadline
+                        ? new Date(settings.registration_deadline).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          })
+                        : 'tanggal yang ditentukan'}
+                    </span>
+                    . Pastikan Anda menyelesaikan pendaftaran sebelum batas waktu.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-semibold text-red-900 mb-1">
+                    Pendaftaran Ditutup
+                  </p>
+                  <p className="text-sm text-red-800">
+                    Mohon maaf, periode pendaftaran telah berakhir. Silakan hubungi sekolah untuk informasi lebih lanjut.
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Form Content */}
         <div className="min-h-[400px]">

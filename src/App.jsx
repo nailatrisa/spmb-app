@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicLayout from './layouts/PublicLayout';
 import AdminLayout from './layouts/AdminLayout';
+import { supabase } from './lib/supabase';
 
-// ============================================
+// ============================================================
 // PUBLIC PAGES
-// ============================================
+// ============================================================
 import Home from './pages/public/Home';
 import Departments from './pages/public/Departments';
 import DepartmentDetail from './pages/public/DepartmentDetail';
@@ -18,45 +19,84 @@ import RegistrationSuccess from './pages/public/RegistrationSuccess';
 import CheckStatus from './pages/public/CheckStatus';
 import RegistrationCard from './pages/public/RegistrationCard';
 
-// ============================================
+// ============================================================
 // ADMIN AUTH PAGES
-// ============================================
+// ============================================================
 import Login from './pages/admin/Login';
 import Register from './pages/admin/Register';
 
-// ============================================
-// ADMIN PROTECTED PAGES (SEMUA LENGKAP)
-// ============================================
+// ============================================================
+// ADMIN PROTECTED PAGES
+// ============================================================
 import Dashboard from './pages/admin/Dashboard';
 import Applicants from './pages/admin/Applicants';
 import ApplicantDetail from './pages/admin/ApplicantDetail';
-
-// Verifikasi & Seleksi
 import Verification from './pages/admin/Verification';
 import Selection from './pages/admin/Selection';
 import Accepted from './pages/admin/Accepted';
 import Rejected from './pages/admin/Rejected';
 import Reserves from './pages/admin/Reserves';
-
-// Master Data
 import AdminDepartments from './pages/admin/Departments';
 import Schools from './pages/admin/Schools';
 import AdminAnnouncements from './pages/admin/Announcements';
-
-// Laporan & Pengaturan
 import Statistics from './pages/admin/Statistics';
 import Settings from './pages/admin/Settings';
 import AuditLog from './pages/admin/AuditLog';
 import Users from './pages/admin/Users';
 import Export from './pages/admin/Export';
 
-// ============================================
-// PLACEHOLDER UNTUK HALAMAN YANG BELUM DIBUAT (OPSIONAL)
-// ============================================
-// Jika file belum ada, import sebagai placeholder agar tidak error
-// Namun semua file penting sudah dibuat di fase sebelumnya
-
 function App() {
+  // ============================================================
+  // 🔥 AUTO-CLOSE: CEK DEADLINE SAAT APLIKASI DIMUAT
+  // ============================================================
+  useEffect(() => {
+    const checkDeadline = async () => {
+      try {
+        // Ambil data deadline dan status dari database
+        const { data, error } = await supabase
+          .from('school_settings')
+          .select('registration_deadline, is_open')
+          .single();
+
+        if (error) {
+          console.error('❌ Gagal ambil data deadline:', error.message);
+          return;
+        }
+
+        if (data?.registration_deadline) {
+          const now = new Date();
+          const deadline = new Date(data.registration_deadline);
+
+          // Jika sudah melewati deadline dan pendaftaran masih terbuka
+          if (now > deadline && data.is_open) {
+            await supabase
+              .from('school_settings')
+              .update({
+                is_open: false,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', data.id);
+
+            console.log('✅ Pendaftaran ditutup otomatis karena deadline telah berakhir.');
+          }
+        }
+      } catch (err) {
+        console.error('❌ Gagal cek deadline:', err);
+      }
+    };
+
+    // Jalankan saat aplikasi dimuat
+    checkDeadline();
+
+    // Cek setiap 5 menit (300.000 ms)
+    const interval = setInterval(checkDeadline, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // ============================================================
+  // ROUTING
+  // ============================================================
   return (
     <BrowserRouter>
       <AuthProvider>
@@ -85,6 +125,8 @@ function App() {
           {/* ==========================================
               PROTECTED ADMIN ROUTES (dengan AdminLayout)
           ========================================== */}
+
+          {/* Dashboard */}
           <Route
             path="/admin/dashboard"
             element={
@@ -189,6 +231,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/export"
+            element={
+              <ProtectedRoute>
+                <Export />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Pengaturan & Sistem */}
           <Route
@@ -215,19 +265,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/admin/export"
-            element={
-              <ProtectedRoute>
-                <Export />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* ==========================================
-              REDIRECT: jika admin masuk ke /admin
-          ========================================== */}
-          {/* Fallback jika ada route admin yang belum terdaftar */}
         </Routes>
       </AuthProvider>
     </BrowserRouter>
