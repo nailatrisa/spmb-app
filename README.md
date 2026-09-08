@@ -492,9 +492,13 @@ Deployment ke Netlify
 
         Environment Variables:
 
-            VITE_SUPABASE_URL
+          VITE_SUPABASE_URL = URL project Supabase
 
-            VITE_SUPABASE_ANON_KEY
+          VITE_SUPABASE_ANON_KEY = publishable/anon key Supabase
+
+        Tambahkan variable tersebut di Site configuration → Environment variables,
+        lalu lakukan redeploy. File .env.local hanya digunakan di komputer lokal
+        dan tidak dikirim ke Netlify.
 
         Klik "Deploy site"
 
