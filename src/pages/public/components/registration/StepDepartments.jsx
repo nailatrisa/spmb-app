@@ -2,16 +2,27 @@
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getDepartments } from '@/services/departmentService';
+import { getDepartmentsWithCounts } from '@/services/departmentService';
+
+const formatScore = (value) => value === null || value === undefined || value === '' ? '-' : value;
 
 const StepDepartments = ({ formData, updateField, errors }) => {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const selectedDepartments = departments.filter((department) =>
+    [formData.department_1, formData.department_2].includes(String(department.id))
+  );
+
+  const getProgress = (department) => {
+    if (!department.quota) return 0;
+    return Math.min(Math.round(((department.applicant_count || 0) / department.quota) * 100), 100);
+  };
+
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
-        const data = await getDepartments();
+        const data = await getDepartmentsWithCounts();
         setDepartments(data);
       } catch (error) {
         console.error('Gagal ambil jurusan:', error);
@@ -39,8 +50,8 @@ const StepDepartments = ({ formData, updateField, errors }) => {
             </SelectTrigger>
             <SelectContent>
               {departments.map((dept) => (
-                <SelectItem key={dept.id} value={dept.id}>
-                  {dept.name} ({dept.code}) - Min Nilai: {dept.min_score || '-'}
+                <SelectItem key={dept.id} value={String(dept.id)}>
+                  <span className="font-medium">{dept.name}</span> ({dept.code}) - Min. {formatScore(dept.min_score)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -52,17 +63,17 @@ const StepDepartments = ({ formData, updateField, errors }) => {
           <Label htmlFor="department_2">Jurusan Pilihan 2 (Opsional)</Label>
           <Select
             value={formData.department_2}
-            onValueChange={(val) => updateField('department_2', val)}
+            onValueChange={(val) => updateField('department_2', val === 'none' ? '' : val)}
             disabled={loading}
           >
             <SelectTrigger>
               <SelectValue placeholder="Pilih jurusan cadangan" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tidak ada</SelectItem>
+              <SelectItem value="none">Tidak ada</SelectItem>
               {departments.map((dept) => (
-                <SelectItem key={dept.id} value={dept.id}>
-                  {dept.name} ({dept.code}) - Min Nilai: {dept.min_score || '-'}
+                <SelectItem key={dept.id} value={String(dept.id)}>
+                  <span className="font-medium">{dept.name}</span> ({dept.code}) - Min. {formatScore(dept.min_score)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -70,7 +81,41 @@ const StepDepartments = ({ formData, updateField, errors }) => {
         </div>
       </div>
 
-      {/* ✅ INPUT NILAI RATA-RATA */}
+      {selectedDepartments.length > 0 && (
+        <div className="space-y-3 rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+          <div>
+            <p className="text-sm font-semibold text-slate-800">Ringkasan pilihan jurusan</p>
+            <p className="text-xs text-slate-500">Pastikan pilihan dan nilai minimum sudah sesuai.</p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {selectedDepartments.map((department) => {
+              const progress = getProgress(department);
+              return (
+                <div key={department.id} className="rounded-lg border border-white bg-white p-3 shadow-sm">
+                  <p className="font-semibold text-slate-800">{department.name}</p>
+                  <p className="text-xs font-medium text-blue-700">Kode: {department.code}</p>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600">
+                    <span>Min. nilai: <strong className="text-slate-800">{formatScore(department.min_score)}</strong></span>
+                    <span>Kuota: <strong className="text-slate-800">{formatScore(department.quota)}</strong></span>
+                  </div>
+                  {department.quota && (
+                    <div className="mt-2">
+                      <div className="mb-1 flex justify-between text-[11px] text-slate-500">
+                        <span>Progress pendaftar</span><span>{progress}%</span>
+                      </div>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
+                        <div className="h-full rounded-full bg-blue-600" style={{ width: `${progress}%` }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* INPUT NILAI RATA-RATA */}
       <div className="space-y-1">
         <Label htmlFor="average_score">
           Nilai Rata-rata Rapor / SKL *

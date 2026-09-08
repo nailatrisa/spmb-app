@@ -125,146 +125,35 @@ function App() {
           {/* ==========================================
               PROTECTED ADMIN ROUTES (dengan AdminLayout)
           ========================================== */}
-
+          <Route element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
           {/* Dashboard */}
-          <Route
-            path="/admin/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/admin/dashboard" element={<Dashboard />} />
 
           {/* Manajemen Calon Siswa */}
-          <Route
-            path="/admin/applicants"
-            element={
-              <ProtectedRoute>
-                <Applicants />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/applicants/:id"
-            element={
-              <ProtectedRoute>
-                <ApplicantDetail />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/admin/applicants" element={<Applicants />} />
+          <Route path="/admin/applicants/:id" element={<ApplicantDetail />} />
 
           {/* Verifikasi & Seleksi */}
-          <Route
-            path="/admin/verification"
-            element={
-              <ProtectedRoute>
-                <Verification />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/selection"
-            element={
-              <ProtectedRoute>
-                <Selection />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/accepted"
-            element={
-              <ProtectedRoute>
-                <Accepted />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/rejected"
-            element={
-              <ProtectedRoute>
-                <Rejected />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/reserves"
-            element={
-              <ProtectedRoute>
-                <Reserves />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/admin/verification" element={<Verification />} />
+          <Route path="/admin/selection" element={<Selection />} />
+          <Route path="/admin/accepted" element={<Accepted />} />
+          <Route path="/admin/rejected" element={<Rejected />} />
+          <Route path="/admin/reserves" element={<Reserves />} />
 
           {/* Master Data */}
-          <Route
-            path="/admin/departments"
-            element={
-              <ProtectedRoute>
-                <AdminDepartments />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/schools"
-            element={
-              <ProtectedRoute>
-                <Schools />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/announcements"
-            element={
-              <ProtectedRoute>
-                <AdminAnnouncements />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/admin/departments" element={<AdminDepartments />} />
+          <Route path="/admin/schools" element={<Schools />} />
+          <Route path="/admin/announcements" element={<AdminAnnouncements />} />
 
           {/* Laporan & Statistik */}
-          <Route
-            path="/admin/statistics"
-            element={
-              <ProtectedRoute>
-                <Statistics />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/export"
-            element={
-              <ProtectedRoute>
-                <Export />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/admin/statistics" element={<Statistics />} />
+          <Route path="/admin/export" element={<Export />} />
 
           {/* Pengaturan & Sistem */}
-          <Route
-            path="/admin/settings"
-            element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/audit-log"
-            element={
-              <ProtectedRoute>
-                <AuditLog />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/users"
-            element={
-              <ProtectedRoute>
-                <Users />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/admin/settings" element={<Settings />} />
+          <Route path="/admin/audit-log" element={<AuditLog />} />
+          <Route path="/admin/users" element={<Users />} />
+          </Route>
         </Routes>
       </AuthProvider>
     </BrowserRouter>

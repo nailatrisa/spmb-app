@@ -174,7 +174,7 @@ const CheckStatus = () => {
       {application && !loading && (
         <div className="mt-8 space-y-6">
           {/* Status Card */}
-          <Card className="border-slate-200 shadow-soft">
+          <Card id="status-card" className="border-slate-200 shadow-soft">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg font-semibold">Informasi Pendaftaran</CardTitle>
             </CardHeader>
@@ -245,6 +245,26 @@ const CheckStatus = () => {
           </div>
         </div>
       )}
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #status-card,
+          #status-card * {
+            visibility: visible;
+          }
+          #status-card {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            border: 1px solid #e2e8f0 !important;
+            box-shadow: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

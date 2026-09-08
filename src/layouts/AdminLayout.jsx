@@ -60,7 +60,6 @@ const AdminLayout = () => {
           event: '*',
           schema: 'public',
           table: 'applications',
-          filter: 'status=eq.pending',
         },
         () => {
           fetchPendingCount();
@@ -127,7 +126,7 @@ const AdminLayout = () => {
     <div className="min-h-screen bg-slate-50 flex">
       {/* ===== DESKTOP SIDEBAR ===== */}
       <aside
-        className={`hidden md:flex flex-col fixed inset-y-0 left-0 z-40 bg-white border-r border-slate-200 transition-all duration-300 ${
+        className={`hidden xl:flex flex-col fixed inset-y-0 left-0 z-40 bg-white border-r border-slate-200 transition-all duration-300 ${
           isSidebarOpen ? 'w-64' : 'w-20'
         }`}
       >
@@ -146,7 +145,7 @@ const AdminLayout = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="hidden lg:flex"
+            className="hidden xl:flex"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           >
             {isSidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -199,12 +198,12 @@ const AdminLayout = () => {
       {/* ===== MOBILE SIDEBAR ===== */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm xl:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-sidebar transform transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-sidebar transform transition-transform duration-300 ease-in-out xl:hidden ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -259,7 +258,7 @@ const AdminLayout = () => {
       </div>
 
       {/* ===== MAIN CONTENT ===== */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}>
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'xl:ml-64' : 'xl:ml-20'}`}>
         <AdminNavbar
           toggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           isMobileMenuOpen={isMobileMenuOpen}

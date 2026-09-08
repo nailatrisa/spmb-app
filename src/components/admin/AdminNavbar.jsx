@@ -99,7 +99,7 @@ const AdminNavbar = ({ toggleMobileMenu, isMobileMenuOpen }) => {
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden text-navy-600"
+            className="xl:hidden text-navy-600"
             onClick={toggleMobileMenu}
           >
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

@@ -73,8 +73,9 @@ const Applicants = () => {
   };
 
   const getDeptName = (id) => {
-    const d = departments.find((dept) => dept.id === id);
-    return d ? d.name : '-';
+    if (id && typeof id === 'object') return id.name || '-';
+    const d = departments.find((dept) => String(dept.id) === String(id));
+    return d?.name || '-';
   };
 
   const handleUpdateStatus = async () => {
