@@ -131,97 +131,105 @@ const CheckStatus = () => {
         Masukkan nomor pendaftaran untuk melacak status Anda.
       </p>
 
-      <Card className="border-slate-200 shadow-soft">
-        <CardContent className="p-6">
-          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <Label htmlFor="registrationNumber" className="sr-only">Nomor Pendaftaran</Label>
-              <Input
-                id="registrationNumber"
-                value={registrationNumber}
-                onChange={(e) => setRegistrationNumber(e.target.value)}
-                placeholder="Contoh: SPMB-2026-00001"
-                className="font-mono"
-              />
-            </div>
-            <Button type="submit" className="gap-2 flex-shrink-0" disabled={loading}>
-              {loading ? (
-                <LoadingSpinner size="sm" text="" />
-              ) : (
-                <>
-                  <Search className="h-4 w-4" />
-                  Cek Status
-                </>
-              )}
-            </Button>
-          </form>
+      {/* FORM SEARCH - TIDAK IKUT CETAK */}
+      <div className="no-print">
+        <Card className="border-slate-200 shadow-soft">
+          <CardContent className="p-6">
+            <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1">
+                <Label htmlFor="registrationNumber" className="sr-only">Nomor Pendaftaran</Label>
+                <Input
+                  id="registrationNumber"
+                  value={registrationNumber}
+                  onChange={(e) => setRegistrationNumber(e.target.value)}
+                  placeholder="Contoh: SPMB-2026-00001"
+                  className="font-mono"
+                />
+              </div>
+              <Button type="submit" className="gap-2 flex-shrink-0" disabled={loading}>
+                {loading ? (
+                  <LoadingSpinner size="sm" text="" />
+                ) : (
+                  <>
+                    <Search className="h-4 w-4" />
+                    Cek Status
+                  </>
+                )}
+              </Button>
+            </form>
 
-          {error && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-start gap-3 text-sm">
-              <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            {error && (
+              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-start gap-3 text-sm">
+                <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {searched && loading && (
-        <div className="mt-8">
+        <div className="mt-8 no-print">
           <LoadingSpinner fullScreen={false} text="Memeriksa data..." />
         </div>
       )}
 
       {application && !loading && (
         <div className="mt-8 space-y-6">
-          {/* Status Card */}
-          <Card id="status-card" className="border-slate-200 shadow-soft">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-semibold">Informasi Pendaftaran</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-navy-400">Nomor Pendaftaran</p>
-                  <p className="text-lg font-bold font-mono text-primary-600">{application.registration_number}</p>
+          {/* ============================================================
+              AREA CETAK - HANYA INI YANG KELUAR SAAT PRINT
+          ============================================================ */}
+          <div id="print-area" className="print-area">
+            {/* Informasi Pendaftaran */}
+            <Card className="border-slate-200 shadow-soft print-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold">Informasi Pendaftaran</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-navy-400">Nomor Pendaftaran</p>
+                    <p className="text-lg font-bold font-mono text-primary-600">{application.registration_number}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-navy-400">Status</p>
+                    <StatusBadge status={application.status} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-navy-400">Nama Lengkap</p>
+                    <p className="font-medium text-navy-800">{application.full_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-navy-400">Jurusan Pilihan 1</p>
+                    <p className="font-medium text-navy-800">{application.department_1?.name || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-navy-400">Asal Sekolah</p>
+                    <p className="font-medium text-navy-800">{application.school_origin?.name || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-navy-400">Tanggal Daftar</p>
+                    <p className="font-medium text-navy-800">
+                      {format(new Date(application.registered_at), 'd MMMM yyyy, HH:mm', { locale: id })}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-navy-400">Status</p>
-                  <StatusBadge status={application.status} />
-                </div>
-                <div>
-                  <p className="text-xs text-navy-400">Nama Lengkap</p>
-                  <p className="font-medium text-navy-800">{application.full_name}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-navy-400">Jurusan Pilihan 1</p>
-                  <p className="font-medium text-navy-800">{application.department_1?.name || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-navy-400">Asal Sekolah</p>
-                  <p className="font-medium text-navy-800">{application.school_origin?.name || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-navy-400">Tanggal Daftar</p>
-                  <p className="font-medium text-navy-800">
-                    {format(new Date(application.registered_at), 'd MMMM yyyy, HH:mm', { locale: id })}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Timeline */}
-          <Card className="border-slate-200 shadow-soft">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-semibold">Status Timeline</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {renderTimeline()}
-            </CardContent>
-          </Card>
+            {/* Timeline */}
+            <Card className="border-slate-200 shadow-soft print-card mt-6">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold">Status Timeline</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {renderTimeline()}
+              </CardContent>
+            </Card>
+          </div>
 
-          {/* Actions */}
-          <div className="flex flex-wrap gap-4 justify-center">
+          {/* TOMBOL AKSI - TIDAK IKUT CETAK */}
+          <div className="flex flex-wrap gap-4 justify-center no-print">
             <Button
               variant="outline"
               className="gap-2"
@@ -245,23 +253,70 @@ const CheckStatus = () => {
           </div>
         </div>
       )}
+
+      {/* ============================================================
+          CSS PRINT - HANYA 1 LEMBAR, TANPA LEMBAR KOSONG
+      ============================================================ */}
       <style>{`
+        /* Sembunyikan semua elemen saat print */
         @media print {
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+          }
+
           body * {
-            visibility: hidden;
+            visibility: hidden !important;
           }
-          #status-card,
-          #status-card * {
-            visibility: visible;
+
+          /* Tampilkan hanya area print */
+          #print-area,
+          #print-area * {
+            visibility: visible !important;
           }
-          #status-card {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            margin: 0;
+
+          /* Atur area print */
+          #print-area {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 20px !important;
+            background: white !important;
+          }
+
+          /* Style card saat print */
+          .print-card {
             border: 1px solid #e2e8f0 !important;
             box-shadow: none !important;
+            background: white !important;
+            margin-bottom: 16px !important;
+            border-radius: 8px !important;
+            page-break-inside: avoid !important;
+          }
+
+          .print-card .border-slate-200 {
+            border-color: #e2e8f0 !important;
+          }
+
+          /* Sembunyikan tombol */
+          .no-print {
+            display: none !important;
+          }
+
+          /* Hapus margin halaman */
+          @page {
+            margin: 0 !important;
+            size: A4 portrait !important;
+          }
+
+          /* Pastikan tidak ada page break di dalam card */
+          .print-card {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
           }
         }
       `}</style>
