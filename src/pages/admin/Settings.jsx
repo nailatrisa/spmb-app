@@ -27,8 +27,8 @@ const Settings = () => {
     target_students: '',
     description: '',
     logo_url: '',
-    registration_deadline: '', // 🔥 TAMBAHKAN
-    is_open: true,              // 🔥 TAMBAHKAN
+    registration_deadline: '',
+    is_open: true,
   });
 
   const fetchData = async () => {
@@ -133,9 +133,11 @@ const Settings = () => {
     setError(null);
 
     try {
+      // 🔥 PERBAIKAN: Ubah string kosong menjadi null untuk kolom timestamp
       const dataToUpdate = {
         ...formData,
         target_students: parseInt(formData.target_students) || 0,
+        registration_deadline: formData.registration_deadline === '' ? null : formData.registration_deadline,
       };
 
       await updateSchoolSettings(settings.id, dataToUpdate);
@@ -267,7 +269,7 @@ const Settings = () => {
             </div>
 
             {/* ============================================================
-                🔥 TAMBAHAN: DEADLINE & STATUS PENDAFTARAN
+                DEADLINE & STATUS PENDAFTARAN
             ============================================================ */}
             <div className="space-y-1">
               <Label htmlFor="registration_deadline">
