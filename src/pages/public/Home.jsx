@@ -99,7 +99,7 @@ const RegistrationSchedule = () => {
   const scheduleItems = [
     {
       id: 1,
-      title: 'Periode Pendaftaran',
+      title: 'Periode Pendaftaran SPMB',
       value: settings?.academic_year || 'Tahun Ajaran 2024/2025',
       icon: Calendar,
       color: 'from-blue-500 to-blue-600',
@@ -108,7 +108,7 @@ const RegistrationSchedule = () => {
     },
     {
       id: 2,
-      title: 'Batas Pendaftaran',
+      title: 'Batas Pendaftaran SPMB',
       value: formatDate(settings?.registration_deadline),
       icon: AlertCircle,
       color: 'from-amber-500 to-amber-600',
@@ -117,7 +117,7 @@ const RegistrationSchedule = () => {
     },
     {
       id: 3,
-      title: 'Status Pendaftaran',
+      title: 'Status Pendaftaran SPMB',
       value: settings?.is_open ? 'Dibuka' : 'Ditutup',
       icon: settings?.is_open ? CheckCircle : AlertCircle,
       color: settings?.is_open ? 'from-green-500 to-green-600' : 'from-red-500 to-red-600',
@@ -144,10 +144,10 @@ const RegistrationSchedule = () => {
           variants={fadeInUp}
         >
           <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">
-            Jadwal Pendaftaran
+            Jadwal Pendaftaran SPMB 1 Ponorogo
           </h3>
           <p className="text-slate-600 text-sm md:text-base">
-            Informasi penting tentang periode dan status pendaftaran siswa baru
+            Informasi penting tentang periode dan status pendaftaran murid baru di SMKN 1 Ponorogo
           </p>
         </motion.div>
 
@@ -257,10 +257,10 @@ const SectionHeader = ({ badge, title, highlight, description, badgeColor = 'blu
 // ============================================================
 const StatsHighlight = () => {
   const [stats, setStats] = useState([
-    { icon: Users, value: '0', label: 'Total Pendaftar', color: 'from-blue-500 to-blue-600', order: 0 },
-    { icon: Building, value: '0', label: 'Jurusan Unggulan', color: 'from-emerald-500 to-emerald-600', order: 1 },
-    { icon: Award, value: '0', label: 'Prestasi Siswa', color: 'from-amber-500 to-amber-600', order: 2 },
-    { icon: GraduationCap, value: '0', label: 'Alumni Sukses', color: 'from-purple-500 to-purple-600', order: 3 },
+    { icon: Users, value: '0', label: 'Total Pendaftar SPMB 1 Ponorogo', color: 'from-blue-500 to-blue-600', order: 0 },
+    { icon: Building, value: '0', label: 'Program Keahlian SMKN 1 Ponorogo', color: 'from-emerald-500 to-emerald-600', order: 1 },
+    { icon: Award, value: '0', label: 'Prestasi Siswa SMKN 1 Ponorogo', color: 'from-amber-500 to-amber-600', order: 2 },
+    { icon: GraduationCap, value: '0', label: 'Alumni Sukses SMKN 1 Ponorogo', color: 'from-purple-500 to-purple-600', order: 3 },
   ]);
 
   const [loading, setLoading] = useState(true);
@@ -415,9 +415,9 @@ const Home = () => {
         <div className="container-custom relative">
           <SectionHeader
             badge="✨ Mengapa Memilih Kami"
-            title="Keunggulan"
-            highlight="Sekolah"
-            description="Fasilitas modern, kurikulum berkualitas, dan program pengembangan karakter yang komprehensif untuk masa depan cerah siswa."
+            title="Keunggulan SPMB"
+            highlight="1 Ponorogo"
+            description="Fasilitas modern, kurikulum industri, dan program pengembangan karakter yang komprehensif untuk masa depan cerah murid SMKN 1 Ponorogo."
             badgeColor="blue"
           />
           <motion.div variants={staggerContainer}>
@@ -442,9 +442,9 @@ const Home = () => {
         <div className="container-custom relative">
           <SectionHeader
             badge="🎓 Pilihan Program"
-            title="Jurusan"
-            highlight="Unggulan"
-            description="Pilih jurusan yang sesuai dengan potensi dan aspirasi karir Anda untuk masa depan gemilang."
+            title="Kompetensi Keahlian"
+            highlight="SPMB 1 Ponorogo"
+            description="Pilih jurusan sesuai potensi dan aspirasi karir Anda untuk masa depan gemilang di dunia industri bersama SMKN 1 Ponorogo."
             badgeColor="emerald"
           />
           <motion.div variants={staggerContainer}>
@@ -462,7 +462,7 @@ const Home = () => {
               to="/jurusan"
               className="inline-flex items-center gap-2 px-6 md:px-8 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:shadow-lg hover:shadow-emerald-500/30 transition-all duration-300 group"
             >
-              Lihat Semua Jurusan
+              Lihat Semua Kompetensi Keahlian
               <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Link>
           </motion.div>
@@ -487,8 +487,8 @@ const Home = () => {
           <SectionHeader
             badge="📋 Panduan Lengkap"
             title="Cara"
-            highlight="Mendaftar"
-            description="Ikuti langkah-langkah sederhana dan sistematis untuk menyelesaikan pendaftaran Anda dengan mudah."
+            highlight="Mendaftar di SPMB 1 Ponorogo"
+            description="Ikuti langkah-langkah sederhana dan sistematis untuk menyelesaikan pendaftaran SPMB SMKN 1 Ponorogo dengan mudah."
             badgeColor="amber"
           />
           <motion.div variants={staggerContainer}>
@@ -513,9 +513,9 @@ const Home = () => {
         <div className="container-custom max-w-4xl relative">
           <SectionHeader
             badge="📄 Kelengkapan Dokumen"
-            title="Syarat"
-            highlight="Pendaftaran"
-            description="Pastikan semua dokumen yang diperlukan sudah disiapkan untuk memudahkan proses verifikasi."
+            title="Syarat Pendaftaran"
+            highlight="SPMB 1 Ponorogo"
+            description="Pastikan semua dokumen yang diperlukan sudah disiapkan untuk memudahkan proses verifikasi SPMB SMKN 1 Ponorogo."
             badgeColor="rose"
           />
           <motion.div variants={staggerContainer}>
@@ -541,8 +541,8 @@ const Home = () => {
           <SectionHeader
             badge="📢 Informasi Terkini"
             title="Pengumuman"
-            highlight="Terbaru"
-            description="Pantau perkembangan terbaru dan informasi penting seputar penerimaan siswa baru kami."
+            highlight="SPMB 1 Ponorogo"
+            description="Pantau perkembangan terbaru dan informasi penting seputar penerimaan murid baru SMKN 1 Ponorogo."
             badgeColor="purple"
           />
           <motion.div variants={staggerContainer}>
@@ -581,8 +581,8 @@ const Home = () => {
           <SectionHeader
             badge="❓ Pertanyaan Umum"
             title="Jawaban"
-            highlight="FAQ"
-            description="Temukan jawaban atas pertanyaan yang sering diajakan seputar pendaftaran dan program kami."
+            highlight="FAQ SPMB 1 Ponorogo"
+            description="Temukan jawaban atas pertanyaan yang sering diajukan seputar pendaftaran SPMB dan program keahlian SMKN 1 Ponorogo."
             badgeColor="indigo"
           />
           <motion.div variants={staggerContainer}>
