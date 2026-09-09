@@ -6,7 +6,7 @@ import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Loader2, Save, Upload, X, Calendar } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import supabase from '../../lib/supabaseClient';
 
 const Settings = () => {
   const [settings, setSettings] = useState(null);
@@ -14,7 +14,7 @@ const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  const [logoFile, setLogoFile] = useState(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [logoPreview, setLogoPreview] = useState('');
   const fileInputRef = useRef(null);
 
@@ -64,30 +64,59 @@ const Settings = () => {
     fetchData();
   }, []);
 
-  const handleFileChange = (e) => {
+  const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert('Ukuran file maksimal 2MB');
-        e.target.value = '';
-        return;
-      }
-      if (!file.type.startsWith('image/')) {
-        alert('Hanya file gambar yang diizinkan');
-        e.target.value = '';
-        return;
-      }
-      setLogoFile(file);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setLogoPreview(event.target.result);
-      };
-      reader.readAsDataURL(file);
+    if (!file || !settings?.id) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Ukuran file maksimal 2MB');
+      e.target.value = '';
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      alert('Hanya file gambar yang diizinkan');
+      e.target.value = '';
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const fileExtension = file.name.split('.').pop();
+      const filePath = `logos/${settings.id}-${Date.now()}.${fileExtension}`;
+      const { error: uploadError } = await supabase.storage
+        .from('school-assets')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: file.type,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabase.storage
+        .from('school-assets')
+        .getPublicUrl(filePath);
+      const logoUrl = publicUrlData.publicUrl;
+
+      const { error: updateError } = await supabase
+        .from('settings')
+        .update({ logo_url: logoUrl, updated_at: new Date().toISOString() })
+        .eq('id', settings.id);
+
+      if (updateError) throw updateError;
+
+      setLogoPreview(logoUrl);
+      setFormData((current) => ({ ...current, logo_url: logoUrl }));
+      setSettings((current) => ({ ...current, logo_url: logoUrl }));
+    } catch (uploadError) {
+      alert(uploadError.message || 'Gagal mengunggah logo.');
+    } finally {
+      setUploadingLogo(false);
+      e.target.value = '';
     }
   };
 
   const removeLogo = () => {
-    setLogoFile(null);
     setLogoPreview('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -102,28 +131,9 @@ const Settings = () => {
     setError(null);
 
     try {
-      let logoUrl = formData.logo_url;
-
-      if (logoFile) {
-        const fileExt = logoFile.name.split('.').pop();
-        const fileName = `logo_${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from('school-logo')
-          .upload(fileName, logoFile, {
-            cacheControl: '3600',
-            upsert: true,
-          });
-        if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage
-          .from('school-logo')
-          .getPublicUrl(fileName);
-        logoUrl = urlData.publicUrl;
-      }
-
       const dataToUpdate = {
         ...formData,
         target_students: parseInt(formData.target_students) || 0,
-        logo_url: logoUrl,
       };
 
       await updateSchoolSettings(settings.id, dataToUpdate);
@@ -323,10 +333,11 @@ const Settings = () => {
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={handleFileChange}
+                  onChange={handleLogoUpload}
+                  disabled={uploadingLogo}
                 />
                 <div className="text-xs text-navy-400">
-                  <p>Upload logo (max 2MB)</p>
+                  <p>{uploadingLogo ? 'Mengunggah logo...' : 'Upload logo (max 2MB)'}</p>
                   <p>Format: JPG, PNG, WEBP</p>
                 </div>
               </div>
