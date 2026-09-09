@@ -99,7 +99,7 @@ const Settings = () => {
       const logoUrl = publicUrlData.publicUrl;
 
       const { error: updateError } = await supabase
-        .from('settings')
+        .from('school_settings')
         .update({ logo_url: logoUrl, updated_at: new Date().toISOString() })
         .eq('id', settings.id);
 
@@ -109,7 +109,9 @@ const Settings = () => {
       setFormData((current) => ({ ...current, logo_url: logoUrl }));
       setSettings((current) => ({ ...current, logo_url: logoUrl }));
     } catch (uploadError) {
-      alert(uploadError.message || 'Gagal mengunggah logo.');
+      const errorMessage = uploadError.message || uploadError.error_description || 'Gagal mengunggah logo.';
+      alert(`Gagal mengunggah logo: ${errorMessage}`);
+      console.error('Logo upload failed:', uploadError);
     } finally {
       setUploadingLogo(false);
       e.target.value = '';
