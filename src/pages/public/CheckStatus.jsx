@@ -7,9 +7,10 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorState from '../../components/ErrorState';
-import { Search, CheckCircle, XCircle, Clock, AlertCircle, Printer } from 'lucide-react';
+import { Search, CheckCircle, XCircle, Clock, AlertCircle, Printer, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { exportStatusToPDF } from '../../utils/exportStatusPDF';
 
 const CheckStatus = () => {
   const [registrationNumber, setRegistrationNumber] = useState('');
@@ -17,6 +18,7 @@ const CheckStatus = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searched, setSearched] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -124,6 +126,33 @@ const CheckStatus = () => {
     );
   };
 
+  // 🔥 FIX: Tampilkan jurusan dan pilihan final dari hasil seleksi dua tahap.
+  const getAcceptanceMessage = () => {
+    if (!application) return null;
+    if (application.final_accepted_from === 1) {
+      return `Selamat! Anda diterima di ${application.department_1?.name || 'jurusan pilihan'} (Pilihan 1)`;
+    }
+    if (application.final_accepted_from === 2) {
+      return `Selamat! Anda diterima di ${application.department_2?.name || 'jurusan pilihan'} (Pilihan 2). Kuota Pilihan 1 sudah terpenuhi.`;
+    }
+    if (application.status === 'rejected') {
+      return 'Mohon maaf, Anda belum diterima di Pilihan 1 maupun Pilihan 2.';
+    }
+    return null;
+  };
+
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      await exportStatusToPDF('print-area', application.registration_number);
+    } catch (exportError) {
+      console.error('Gagal export status PDF:', exportError);
+      setError('Gagal membuat PDF. Silakan coba lagi.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="container-custom py-12 max-w-3xl">
       <h1 className="text-3xl font-bold text-navy-900 text-center">Cek Status Pendaftaran</h1>
@@ -194,6 +223,11 @@ const CheckStatus = () => {
                   <div>
                     <p className="text-xs text-navy-400">Status</p>
                     <StatusBadge status={application.status} />
+                    {getAcceptanceMessage() && (
+                      <p className={`mt-2 text-sm font-semibold ${application.status === 'rejected' ? 'text-red-600' : 'text-green-700'}`}>
+                        {getAcceptanceMessage()}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <p className="text-xs text-navy-400">Nama Lengkap</p>
@@ -237,6 +271,14 @@ const CheckStatus = () => {
             >
               <Printer className="h-4 w-4" />
               Cetak Status
+            </Button>
+            <Button
+              className="gap-2"
+              onClick={handleExportPDF}
+              disabled={isExporting}
+            >
+              <Download className="h-4 w-4" />
+              {isExporting ? 'Membuat PDF...' : 'Export PDF'}
             </Button>
             <Button
               variant="link"

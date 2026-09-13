@@ -41,6 +41,7 @@ const Accepted = () => {
           .select(`
             *,
             department_1:department_1 (id, name, code),
+            department_accepted:final_accepted_department_id (id, name, code),
             school_origin:school_origin_id (id, name)
           `)
           .eq('status', 'accepted')
@@ -68,7 +69,7 @@ const Accepted = () => {
   useEffect(() => {
     let result = applicants;
     if (departmentFilter !== 'all') {
-      result = result.filter((app) => app.department_1?.id === departmentFilter);
+      result = result.filter((app) => (app.department_accepted || app.department_1)?.id === departmentFilter);
     }
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
@@ -135,6 +136,7 @@ const Accepted = () => {
                 <TableHead>No Pendaftaran</TableHead>
                 <TableHead>Nama</TableHead>
                 <TableHead>Jurusan</TableHead>
+                <TableHead>Diterima dari</TableHead>
                 <TableHead>Asal Sekolah</TableHead>
                 <TableHead>Tanggal Diterima</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
@@ -143,7 +145,7 @@ const Accepted = () => {
             <TableBody>
               {filteredApplicants.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-navy-400">
+                  <TableCell colSpan={7} className="text-center py-8 text-navy-400">
                     Belum ada siswa yang diterima.
                   </TableCell>
                 </TableRow>
@@ -152,7 +154,14 @@ const Accepted = () => {
                   <TableRow key={app.id}>
                     <TableCell className="font-mono text-xs">{app.registration_number}</TableCell>
                     <TableCell className="font-medium">{app.full_name}</TableCell>
-                    <TableCell>{app.department_1?.name || '-'}</TableCell>
+                    <TableCell>{app.department_accepted?.name || app.department_1?.name || '-'}</TableCell>
+                    <TableCell>
+                      <Badge className={app.final_accepted_from === 2
+                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                        : 'bg-green-50 text-green-700 border-green-200'}>
+                        Pilihan {app.final_accepted_from || 1}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{app.school_origin?.name || '-'}</TableCell>
                     <TableCell>
                       {format(new Date(app.updated_at), 'dd/MM/yyyy', { locale: id })}

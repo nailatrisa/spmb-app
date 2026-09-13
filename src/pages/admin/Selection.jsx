@@ -234,18 +234,18 @@ const Selection = () => {
     }
   };
 
-  // 🔥 SELEKSI OTOMATIS BERDASARKAN NILAI & KUOTA
+  // 🔥 FIX: Seleksi otomatis dua tahap untuk Pilihan 1 dan Pilihan 2
   const handleAutoSelection = async () => {
     if (!window.confirm('Lakukan seleksi otomatis berdasarkan nilai dan kuota?')) return;
 
     setIsAutoSelecting(true);
     try {
-      // Ambil semua siswa yang sudah diverifikasi
       const { data: verifiedStudents, error: fetchError } = await supabase
         .from('applications')
         .select(`
           *,
-          department_1:department_1 (id, name, quota, min_score)
+          department_1:department_1 (id, name, quota, min_score),
+          department_2:department_2 (id, name, quota, min_score)
         `)
         .eq('status', 'verified');
 
@@ -257,66 +257,113 @@ const Selection = () => {
         return;
       }
 
-      let acceptedCount = 0;
-      let rejectedCount = 0;
-      let reserveCount = 0;
-      let skippedCount = 0;
+      const decisions = new Map();
+      const byDepartment = (choice) => verifiedStudents.reduce((groups, student) => {
+        const department = student[choice];
+        if (!department) return groups;
+        if (!groups[department.id]) groups[department.id] = { department, students: [] };
+        groups[department.id].students.push(student);
+        return groups;
+      }, {});
+      const eligible = (student, department) => (
+        student.average_score !== null &&
+        student.average_score >= (department.min_score || 0)
+      );
+      const sorted = (students) => [...students].sort(
+        (a, b) => (b.average_score || 0) - (a.average_score || 0)
+      );
 
-      // Kelompokkan berdasarkan jurusan
-      const byDepartment = {};
+      // Tahap 1: isi kuota Pilihan 1 berdasarkan nilai tertinggi.
+      const stageTwoCandidates = [];
+      const stageOneGroups = byDepartment('department_1');
+      Object.values(stageOneGroups).forEach(({ department, students }) => {
+        const qualified = sorted(students.filter((student) => eligible(student, department)));
+        const accepted = qualified.slice(0, department.quota || 0);
+        accepted.forEach((student) => {
+          decisions.set(student.id, {
+            status: 'accepted',
+            final_accepted_from: 1,
+            final_accepted_department_id: department.id,
+            choice1_status: 'accepted',
+            choice2_status: 'pending',
+          });
+        });
+
+        students.filter((student) => !accepted.includes(student)).forEach((student) => {
+          stageTwoCandidates.push(student);
+          decisions.set(student.id, {
+            status: 'rejected',
+            final_accepted_from: null,
+            final_accepted_department_id: null,
+            choice1_status: 'rejected',
+            choice2_status: student.department_2 ? 'pending' : 'rejected',
+          });
+        });
+      });
+
+      // Tahap 2: kandidat yang gagal di Pilihan 1 memperebutkan sisa kuota Pilihan 2.
+      const stageTwoGroups = stageTwoCandidates.reduce((groups, student) => {
+        const department = student.department_2;
+        if (!department) return groups;
+        if (!groups[department.id]) groups[department.id] = { department, students: [] };
+        groups[department.id].students.push(student);
+        return groups;
+      }, {});
+      const acceptedByDepartment = {};
+      verifiedStudents.forEach((student) => {
+        const decision = decisions.get(student.id);
+        if (decision?.final_accepted_from === 1) {
+          const departmentId = decision.final_accepted_department_id;
+          acceptedByDepartment[departmentId] = (acceptedByDepartment[departmentId] || 0) + 1;
+        }
+      });
+
+      Object.values(stageTwoGroups).forEach(({ department, students }) => {
+        const remainingQuota = Math.max(
+          0,
+          (department.quota || 0) - (acceptedByDepartment[department.id] || 0)
+        );
+        const qualified = sorted(students.filter((student) => eligible(student, department)));
+        qualified.slice(0, remainingQuota).forEach((student) => {
+          decisions.set(student.id, {
+            status: 'accepted',
+            final_accepted_from: 2,
+            final_accepted_department_id: department.id,
+            choice1_status: 'rejected',
+            choice2_status: 'accepted',
+          });
+        });
+      });
+
+      stageTwoCandidates.forEach((student) => {
+        const decision = decisions.get(student.id);
+        if (decision?.final_accepted_from !== 2) {
+          decisions.set(student.id, {
+            ...decision,
+            choice2_status: 'rejected',
+          });
+        }
+      });
+
       for (const student of verifiedStudents) {
-        const deptId = student.department_1;
-        if (!deptId) continue;
-        if (!byDepartment[deptId]) {
-          byDepartment[deptId] = {
-            dept: student.department_1,
-            students: [],
-          };
-        }
-        byDepartment[deptId].students.push(student);
+        const decision = decisions.get(student.id) || {
+          status: 'rejected',
+          final_accepted_from: null,
+          final_accepted_department_id: null,
+          choice1_status: 'rejected',
+          choice2_status: 'rejected',
+        };
+        const { error } = await supabase
+          .from('applications')
+          .update({ ...decision, updated_at: new Date().toISOString() })
+          .eq('id', student.id);
+        if (error) throw error;
       }
 
-      // Proses setiap jurusan
-      for (const deptId of Object.keys(byDepartment)) {
-        const { dept, students } = byDepartment[deptId];
-        // Urutkan siswa berdasarkan nilai tertinggi
-        students.sort((a, b) => (b.average_score || 0) - (a.average_score || 0));
-
-        let accepted = 0;
-
-        for (const student of students) {
-          // Cek apakah nilai memenuhi min_score
-          if (student.average_score === null || student.average_score < dept.min_score) {
-            // Nilai tidak memenuhi -> ditolak
-            await supabase
-              .from('applications')
-              .update({ status: 'rejected', updated_at: new Date().toISOString() })
-              .eq('id', student.id);
-            rejectedCount++;
-            continue;
-          }
-
-          // Cek kuota
-          if (accepted < dept.quota) {
-            // Terima
-            await supabase
-              .from('applications')
-              .update({ status: 'accepted', updated_at: new Date().toISOString() })
-              .eq('id', student.id);
-            accepted++;
-            acceptedCount++;
-          } else {
-            // Kuota penuh -> cadangan
-            await supabase
-              .from('applications')
-              .update({ status: 'reserve', updated_at: new Date().toISOString() })
-              .eq('id', student.id);
-            reserveCount++;
-          }
-        }
-      }
-
-      alert(`Seleksi otomatis selesai!\n✅ Diterima: ${acceptedCount}\n📋 Cadangan: ${reserveCount}\n❌ Ditolak: ${rejectedCount}`);
+      const acceptedStageOne = [...decisions.values()].filter((decision) => decision.final_accepted_from === 1).length;
+      const acceptedStageTwo = [...decisions.values()].filter((decision) => decision.final_accepted_from === 2).length;
+      const rejectedCount = [...decisions.values()].filter((decision) => decision.status === 'rejected').length;
+      alert(`Seleksi otomatis selesai!\n✅ Diterima Tahap 1: ${acceptedStageOne}\n🔵 Diterima Tahap 2: ${acceptedStageTwo}\n❌ Tidak diterima: ${rejectedCount}`);
       await fetchApplicants();
     } catch (error) {
       console.error('Gagal seleksi otomatis:', error);
