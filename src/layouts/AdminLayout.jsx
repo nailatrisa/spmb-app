@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -20,14 +20,8 @@ import {
   Database,
   ChevronLeft,
   ChevronRight,
-  Menu,
   X,
-  FileText,
-  Printer,
   Download,
-  HelpCircle,
-  Mail,
-  Shield,
   User,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -72,9 +66,7 @@ const AdminLayout = () => {
     };
   }, []);
 
-  // ============================================================
-  // MENU SIDEBAR LENGKAP
-  // ============================================================
+  // 🔥 FIX: hilangkan menu kosong
   const menuItems = [
     // DASHBOARD
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
@@ -97,12 +89,9 @@ const AdminLayout = () => {
 
     // KONTEN
     { icon: Megaphone, label: 'Pengumuman', path: '/admin/announcements' },
-    { icon: HelpCircle, label: 'FAQ', path: '/admin/faq' },
-    { icon: FileText, label: 'Informasi SPMB', path: '/admin/info' },
 
     // SISTEM
     { icon: User, label: 'User Admin', path: '/admin/users' },
-    { icon: Shield, label: 'Role & Permission', path: '/admin/roles' },
     { icon: Settings, label: 'Pengaturan', path: '/admin/settings' },
     { icon: Database, label: 'Audit Log', path: '/admin/audit-log' },
   ];
