@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { getApplicationByRegistrationNumber, getApplicationTimeline } from '../../services/applicationService';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import ErrorState from '../../components/ErrorState';
 import { Search, CheckCircle, XCircle, Clock, AlertCircle, Printer, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -129,14 +127,15 @@ const CheckStatus = () => {
   // 🔥 FIX: Tampilkan jurusan dan pilihan final dari hasil seleksi dua tahap.
   const getAcceptanceMessage = () => {
     if (!application) return null;
+    if (application.status === 'rejected') {
+      return 'Mohon maaf, Anda belum diterima di Pilihan 1 maupun Pilihan 2.';
+    }
+    if (application.status !== 'accepted') return null;
     if (application.final_accepted_from === 1) {
       return `Selamat! Anda diterima di ${application.department_1?.name || 'jurusan pilihan'} (Pilihan 1)`;
     }
     if (application.final_accepted_from === 2) {
       return `Selamat! Anda diterima di ${application.department_2?.name || 'jurusan pilihan'} (Pilihan 2). Kuota Pilihan 1 sudah terpenuhi.`;
-    }
-    if (application.status === 'rejected') {
-      return 'Mohon maaf, Anda belum diterima di Pilihan 1 maupun Pilihan 2.';
     }
     return null;
   };
